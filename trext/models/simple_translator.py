@@ -1,5 +1,6 @@
 from typing import Tuple
 
+import einops
 import torch
 from torch import Tensor
 from torch.nn import (
@@ -73,13 +74,16 @@ class Decoder(Module):
         pass
 
 
-class Seq2Seq(Module):
+class SimpleTranslator(Module):
     def __init__(
             self,
             encoder: Module,
             decoder: Module,
+            device: torch.device,
         ):
         super().__init__()
+
+        self.device = device
         self.encoder = encoder
         self.decoder = decoder
 
@@ -88,5 +92,5 @@ class Seq2Seq(Module):
             source: Tensor,
             target: Tensor,
         ):
-        pass
+        
 
