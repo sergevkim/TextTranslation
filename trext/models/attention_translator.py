@@ -38,6 +38,25 @@ class Encoder(Module):
         return outputs, hidden
 
 
+class Attention(Module):
+    def __init__(
+            self,
+        ):
+        super().__init__()
+
+    def forward(
+            self,
+            decoder_hidden: Tensor,
+            encoder_outputs: Tensor,
+        ) -> Tensor:
+
+        energy = torch.tanh()
+
+        attention = torch.sum(energy, dim=2)
+
+        return torch.nn.functional.softmax(attention, dim=1)
+
+
 class Decoder(Module):
     def __init__(
             self,
@@ -55,7 +74,7 @@ class Decoder(Module):
         pass
 
 
-class SimpleTranslator(Module):
+class AttentionTranslator(Module):
     def __init__(
             self,
             encoder: Module,
