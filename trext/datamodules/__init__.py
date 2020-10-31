@@ -1,2 +1,2 @@
-from .de_en_datamodule import DeEnDatamodule
+from .de_en_datamodule import DeEnDataModule
 

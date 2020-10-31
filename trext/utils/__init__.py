@@ -1,2 +1,2 @@
-from .vocabulary import vocabulary
+from .vocabulary import Vocabulary
 

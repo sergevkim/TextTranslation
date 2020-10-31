@@ -11,8 +11,13 @@ class Vocabulary:
         self.idx2word[1] = 'EOS'
         self.n_words = 2
 
-    def add_sentence(self, sentence: str):
-        for word in sentence.split():
+        self.max_length = 0
+
+    def add_sentence(self, line: str):
+        sentence = line.split()
+        self.max_length = max(len(sentence), self.max_length)
+
+        for word in sentence:
             self.add_word(word)
 
     def add_word(self, word: str):
@@ -24,20 +29,20 @@ class Vocabulary:
         else:
             self.word2cnt[word] += 1
 
+    @staticmethod
+    def build_vocabulary(
+            text_corpus_filename: Path,
+        ):
+        vocabulary = Vocabulary()
 
-def prepare_vocabulary(
-        text_corpus_filename: Path,
-    ) -> Vocabulary:
-    vocabulary = Vocabulary()
+        with open(text_corpus_filename) as f:
+            lines = f.readlines()
 
-    with open(text_corpus_filename) as f:
-        lines = f.readlines()
+        print(lines[0])
+        for line in lines:
+            vocabulary.add_sentence(
+                line=line,
+            )
 
-    print(lines[0])
-    for line in lines:
-        vocabulary.add_sentence(
-            sentence=line
-        )
-
-    return vocabulary
+        return vocabulary
 

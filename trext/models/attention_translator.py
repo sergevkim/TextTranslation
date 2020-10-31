@@ -31,9 +31,9 @@ class Encoder(Module):
 
         embedded_x = self.dropout(self.embedding(x))
 
-        outputs, hidden = self.rnn(embedded_x
+        outputs, hidden = self.rnn(embedded_x)
 
-        hidden = torch.tanh()
+        hidden = None #torch.tanh()
 
         return outputs, hidden
 
@@ -57,7 +57,7 @@ class Attention(Module):
         return torch.nn.functional.softmax(attention, dim=1)
 
 
-class Attention(nn.Module):
+class Attention(Module):
     def __init__(self):
         super(Attention, self).__init__()
 
@@ -111,8 +111,10 @@ class AttentionTranslator(Module):
             source: Tensor,
             target: Tensor,
         ):
+        pass
 
     def training_step(
             self,
         ):
+        pass
 
