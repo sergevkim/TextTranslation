@@ -57,6 +57,25 @@ class Attention(Module):
         return torch.nn.functional.softmax(attention, dim=1)
 
 
+class Attention(nn.Module):
+    def __init__(self):
+        super(Attention, self).__init__()
+
+    def forward(self, K, V, Q):
+        A = torch.bmm(K.transpose(1,2), Q) / np.sqrt(Q.shape[1])
+        A = F.softmax(A, 1)
+        R = torch.bmm(V, A)
+        return torch.cat((R, Q), dim=1)
+
+
+def attention(K, V, Q):
+    _, n_channels, _ = K.shape
+    A = torch.einsum('bct,bcl->btl', [K, Q])
+    A = F.softmax(A * n_channels ** (-0.5), 1)
+    R = torch.einsum('bct,btl->bcl', [V, A])
+    return torch.cat((R, Q), dim=1)
+
+
 class Decoder(Module):
     def __init__(
             self,

@@ -1,6 +1,8 @@
-from . import datamodules
-from . import models
-from . import loggers
-from . import trainer
-from . import utils
+from . import (
+    datamodules,
+    loggers,
+    models,
+    trainer,
+    utils,
+)
 

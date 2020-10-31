@@ -1,0 +1,2 @@
+from .vocabulary import vocabulary
+
