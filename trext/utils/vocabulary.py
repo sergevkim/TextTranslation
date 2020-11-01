@@ -1,33 +1,27 @@
 from pathlib import Path
 from typing import List
 
+from trext.utils.editor import Editor
+
 
 class Vocabulary:
     def __init__(self):
-        self.word2idx = dict()
-        self.word2cnt = dict()
-        self.idx2word = dict()
-        self.idx2word[0] = 'SOS'
-        self.idx2word[1] = 'EOS'
-        self.n_words = 2
-
+        self.token2tag = dict()
+        self.token2count = dict()
+        self.tag2token = dict()
+        self.tag2token[0] = 'SOS'
+        self.tag2token[1] = 'EOS'
+        self.n_tokens = 2
         self.max_length = 0
 
-    def add_sentence(self, line: str):
-        sentence = line.split()
-        self.max_length = max(len(sentence), self.max_length)
-
-        for word in sentence:
-            self.add_word(word)
-
-    def add_word(self, word: str):
-        if word not in self.word2idx:
-            self.word2idx[word] = self.n_words
-            self.word2cnt[word] = 1
-            self.idx2word[self.n_words] = word
-            self.n_words += 1
+    def add_token(self, token: str):
+        if token not in self.token2tag:
+            self.token2tag[token] = self.n_tokens
+            self.token2count[token] = 1
+            self.tag2token[self.n_tokens] = token
+            self.n_tokens += 1
         else:
-            self.word2cnt[word] += 1
+            self.token2count[token] += 1
 
     @staticmethod
     def build_vocabulary(
@@ -35,14 +29,14 @@ class Vocabulary:
         ):
         vocabulary = Vocabulary()
 
-        with open(text_corpus_filename) as f:
-            lines = f.readlines()
+        lines = Editor.get_lines(text_corpus_filename=text_corpus_filename)
 
-        print(lines[0])
         for line in lines:
-            vocabulary.add_sentence(
-                line=line,
-            )
+            tokens = line.split()
+            self.max_length = max(len(tokens), self.max_length)
+
+            for token in tokens:
+                self.add_token(token)
 
         return vocabulary
 
