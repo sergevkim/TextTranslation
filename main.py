@@ -7,21 +7,23 @@ from trext.datamodules import DeEnDataModule
 from trext.loggers import NeptuneLogger
 #from trext.models import SimpleTranslator
 from trext.trainer import Trainer
-from trext.utils import Vocabulary
+from trext.utils import Editor, Vocabulary
 
 
 def main(args):
-    en_vocabulary = Vocabulary.build_vocabulary(
+    en_vocabulary, en_max_length = Vocabulary.build_vocabulary(
         text_corpus_filename=Path('./data/homework_machine_translation_de-en/train.de-en.en')
     )
-    de_vocabulary = Vocabulary.build_vocabulary(
+    de_vocabulary, de_max_length = Vocabulary.build_vocabulary(
         text_corpus_filename=Path('./data/homework_machine_translation_de-en/train.de-en.de')
     )
 
-    for i in range(10):
-        print(en_vocabulary.idx2word[i], de_vocabulary.idx2word[i])
-    print(en_vocabulary.max_length, de_vocabulary.max_length)
-
+    a = Editor.get_tags_lists(
+        text_corpus_filename=Path('./data/homework_machine_translation_de-en/train.de-en.de'),
+        vocabulary=de_vocabulary,
+        max_length = de_max_length,
+    )
+    print(a[0], len(a[0]))
 
     '''
     model = SimpleTranslator()

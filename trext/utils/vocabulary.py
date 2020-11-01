@@ -7,12 +7,13 @@ from trext.utils.editor import Editor
 class Vocabulary:
     def __init__(self):
         self.token2tag = dict()
-        self.token2count = dict()
         self.tag2token = dict()
         self.tag2token[0] = 'SOS'
         self.tag2token[1] = 'EOS'
+        self.token2tag['SOS'] = 0
+        self.token2tag['EOS'] = 1
+        self.token2count = dict()
         self.n_tokens = 2
-        self.max_length = 0
 
     def add_token(self, token: str):
         if token not in self.token2tag:
@@ -28,15 +29,16 @@ class Vocabulary:
             text_corpus_filename: Path,
         ):
         vocabulary = Vocabulary()
+        max_length = 0
 
         lines = Editor.get_lines(text_corpus_filename=text_corpus_filename)
 
         for line in lines:
             tokens = line.split()
-            self.max_length = max(len(tokens), self.max_length)
+            max_length = max(len(tokens), max_length)
 
             for token in tokens:
-                self.add_token(token)
+                vocabulary.add_token(token)
 
-        return vocabulary
+        return vocabulary, max_length
 

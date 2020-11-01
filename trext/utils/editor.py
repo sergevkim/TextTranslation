@@ -20,7 +20,7 @@ class Editor:
         tokens_lists = list()
 
         for line in lines:
-            tokens = lines.split()
+            tokens = line.split()
             tokens_lists.append(tokens)
 
         return tokens_lists
@@ -29,6 +29,7 @@ class Editor:
     def tokens_lists2tags_lists(
             tokens_lists: List[List[str]],
             vocabulary,
+            max_length,
         ) -> List[List[int]]:
         tags_lists = list()
 
@@ -39,7 +40,27 @@ class Editor:
                 tag = vocabulary.token2tag[token]
                 tags.append(tag)
 
+            for i in range(1 + max_length - len(tags)):
+                tags.append(vocabulary.token2tag['EOS'])
+
             tags_lists.append(tags)
+
+        return tags_lists
+
+    @classmethod
+    def get_tags_lists(
+            cls,
+            text_corpus_filename: Path,
+            vocabulary,
+            max_length,
+        ) -> List[List[int]]:
+        lines = cls.get_lines(text_corpus_filename=text_corpus_filename)
+        tokens_lists = cls.lines2tokens_lists(lines=lines)
+        tags_lists = cls.tokens_lists2tags_lists(
+            tokens_lists=tokens_lists,
+            vocabulary=vocabulary,
+            max_length=max_length,
+        )
 
         return tags_lists
 
