@@ -26,12 +26,12 @@ class Vocabulary:
 
     @staticmethod
     def build_vocabulary(
-            text_corpus_filename: Path,
+            text_corpus_path: Path,
         ):
         vocabulary = Vocabulary()
         max_length = 0
 
-        lines = Editor.get_lines(text_corpus_filename=text_corpus_filename)
+        lines = Editor.get_lines(text_corpus_path=text_corpus_path)
 
         for line in lines:
             tokens = line.split()

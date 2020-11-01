@@ -1,29 +1,30 @@
 from pathlib import Path
 from typing import List, Tuple
 
+import torch
 from torch import Tensor
 from torch.utils.data import Dataset, DataLoader
 
-from trext.utils import Vocabulary
+from trext.utils import Editor, Vocabulary
 
 
 class DeEnDataset(Dataset):
     def __init__(
             self,
-            de_sentences: List[str],
-            en_sentences: List[str],
+            de_tags_lists: List[str],
+            en_tags_lists: List[str],
         ):
-        self.de_sentences = de_sentences
-        self.en_sentences = en_sentences
+        self.de_tags_lists = de_tags_lists
+        self.en_tags_lists = en_tags_lists
 
     def __len__(self) -> int:
-        return len(self.de_sentences)
+        return len(self.de_tags_lists)
 
     def __getitem__(self, idx: int) -> Tuple[Tensor, Tensor]:
-        de_sentence = Tensor(self.de_sentences[idx])
-        en_sentence = Tensor(self.en_sentences[idx])
+        de_tags = Tensor(self.de_tags_lists[idx])
+        en_tags = Tensor(self.en_tags_lists[idx])
 
-        return (de_sentence, en_sentence)
+        return (de_tags, en_tags)
 
 
 class DeEnDataModule:
@@ -38,29 +39,39 @@ class DeEnDataModule:
         self.num_workers = num_workers
 
     def prepare_data(self):
-        de_filename = self.data_dir / 'train.de-en.de'
-        en_filename = self.data_dir / 'train.de-en.en'
+        de_corpus_path = self.data_dir / 'train.de-en.de'
+        en_corpus_path = self.data_dir / 'train.de-en.en'
 
-        de_vocabulary = Vocabulary.build_vocabulary(
-            text_corpus_filename=de_filename,
+        de_vocabulary, de_max_length = Vocabulary.build_vocabulary(
+            text_corpus_path=de_corpus_path,
         )
-        en_vocabulary = Vocabulary.build_vocabulary(
-            text_corpus_filename=en_filename,
+        en_vocabulary, en_max_length = Vocabulary.build_vocabulary(
+            text_corpus_path=en_corpus_path,
         )
 
+        de_tags_lists = Editor.get_tags_lists(
+            text_corpus_path=de_corpus_path,
+            vocabulary=de_vocabulary,
+            max_length=de_max_length,
+        )
+        en_tags_lists = Editor.get_tags_lists(
+            text_corpus_path=en_corpus_path,
+            vocabulary=en_vocabulary,
+            max_length=en_max_length,
+        )
 
         data = dict(
-            de_sentences=de_sentences,
-            en_sentences=en_sentences,
+            de_tags_lists=de_tags_lists,
+            en_tags_lists=en_tags_lists,
         )
 
         return data
 
-    def setup(self):
+    def setup(self, val_ratio: float):
         data = self.prepare_data()
         full_dataset = DeEnDataset(
-            de_sentences=data['de_sentences'],
-            en_sentences=data['en_sentences'],
+            de_tags_lists=data['de_tags_lists'],
+            en_tags_lists=data['en_tags_lists'],
         )
 
         full_size = len(full_dataset)

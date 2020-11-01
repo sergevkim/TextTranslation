@@ -11,24 +11,20 @@ from trext.utils import Editor, Vocabulary
 
 
 def main(args):
-    en_vocabulary, en_max_length = Vocabulary.build_vocabulary(
-        text_corpus_filename=Path('./data/homework_machine_translation_de-en/train.de-en.en')
+    #model = SimpleTranslator()
+    datamodule = DeEnDataModule(
+        data_dir = Path('data/homework_machine_translation_de-en'),
+        batch_size=2,
+        num_workers=4,
     )
-    de_vocabulary, de_max_length = Vocabulary.build_vocabulary(
-        text_corpus_filename=Path('./data/homework_machine_translation_de-en/train.de-en.de')
-    )
+    datamodule.setup(val_ratio=0.1)
+    loader = datamodule.train_dataloader()
 
-    a = Editor.get_tags_lists(
-        text_corpus_filename=Path('./data/homework_machine_translation_de-en/train.de-en.de'),
-        vocabulary=de_vocabulary,
-        max_length = de_max_length,
-    )
-    print(a[0], len(a[0]))
-
+    print(len(loader))
+    for i, b in enumerate(loader):
+        print(b[0])
+        break
     '''
-    model = SimpleTranslator()
-    datamodule = DeEnDataModule()
-    datamodule.setup()
     logger = NeptuneLogger()
     trainer = Trainer()
 

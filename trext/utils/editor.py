@@ -6,9 +6,9 @@ class Editor:
 
     @staticmethod
     def get_lines(
-            text_corpus_filename: Path,
+            text_corpus_path: Path,
         ):
-        with open(text_corpus_filename) as f:
+        with open(text_corpus_path) as f:
             lines = f.readlines()
 
         return lines
@@ -50,11 +50,11 @@ class Editor:
     @classmethod
     def get_tags_lists(
             cls,
-            text_corpus_filename: Path,
+            text_corpus_path: Path,
             vocabulary,
             max_length,
         ) -> List[List[int]]:
-        lines = cls.get_lines(text_corpus_filename=text_corpus_filename)
+        lines = cls.get_lines(text_corpus_path=text_corpus_path)
         tokens_lists = cls.lines2tokens_lists(lines=lines)
         tags_lists = cls.tokens_lists2tags_lists(
             tokens_lists=tokens_lists,
