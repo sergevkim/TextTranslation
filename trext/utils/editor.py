@@ -1,9 +1,10 @@
 from pathlib import Path
 from typing import List
 
+import torch.nn.utils.rnn as rnn
+
 
 class Editor:
-
     @staticmethod
     def get_lines(
             text_corpus_path: Path,
@@ -40,8 +41,9 @@ class Editor:
                 tag = vocabulary.token2tag[token]
                 tags.append(tag)
 
+            tags.append(vocabulary.token2tag['EOS'])
             for i in range(1 + max_length - len(tags)):
-                tags.append(vocabulary.token2tag['EOS'])
+                tags.append(vocabulary.token2tag['PAD'])
 
             tags_lists.append(tags)
 

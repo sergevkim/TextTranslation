@@ -8,12 +8,14 @@ class Vocabulary:
     def __init__(self):
         self.token2tag = dict()
         self.tag2token = dict()
-        self.tag2token[0] = 'SOS'
+        self.tag2token[0] = 'PAD'
         self.tag2token[1] = 'EOS'
-        self.token2tag['SOS'] = 0
-        self.token2tag['EOS'] = 1
+        self.tag2token[2] = 'SOS'
+        self.token2tag['PAD'] = 0
+        self.token2tag['SOS'] = 1
+        self.token2tag['EOS'] = 2
         self.token2count = dict()
-        self.n_tokens = 2
+        self.n_tokens = 3
 
     def add_token(self, token: str):
         if token not in self.token2tag:
