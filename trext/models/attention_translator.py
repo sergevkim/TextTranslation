@@ -11,7 +11,7 @@ from torch.nn import (
     GRU,
     Linear,
     Module,
-    NLLLoss,
+    CrossEntropyLoss,
 )
 from torch.optim import Adam
 from torch.optim.optimizer import Optimizer
@@ -89,8 +89,8 @@ class Attention(Module):
             hidden: Tensor,
             encoder_outputs: Tensor,
         ) -> Tensor:
-        batch_size, source_len = decoder_outputs.shape
-        hidden = hidden.unsqueeze(1).repeat(1, src_len, 1)
+        source_len, batch_size, _ = encoder_outputs.shape
+        hidden = hidden.unsqueeze(1).repeat(1, source_len, 1)
         encoder_outputs = encoder_outputs.permute(1, 0, 2)
         cats = torch.cat(
             (hidden, encoder_outputs),
@@ -114,6 +114,7 @@ class Decoder(Module):
         ):
         super().__init__()
 
+        self.output_dim = output_dim
         self.attention = attention
         self.embedding = Embedding(
             num_embeddings=output_dim,
@@ -128,6 +129,10 @@ class Decoder(Module):
                 encoder_hidden_dim * 2 + embedding_dim + decoder_hidden_dim,
             out_features=output_dim,
         )
+        self.dropout = Dropout(
+            p=dropout_p,
+            inplace=True,
+        )
 
     def forward(
             self,
@@ -140,8 +145,8 @@ class Decoder(Module):
         x_3 = self.dropout(x_2)
 
         a = self.attention(
-            hidden,
-            encoder_outputs,
+            hidden=decoder_hidden,
+            encoder_outputs=encoder_outputs,
         )
         a = a.unsqueeze(1)
 
@@ -157,7 +162,7 @@ class Decoder(Module):
 
         output, hidden = self.rnn(
             rnn_input,
-            hidden.unsqueeze(0),
+            decoder_hidden.unsqueeze(0),
         )
 
         assert (output == hidden).all()
@@ -187,7 +192,9 @@ class AttentionTranslator(Module):
         super().__init__()
 
         self.device = device
+        self.learning_rate = learning_rate
         self.teacher_forcing_ratio = teacher_forcing_ratio
+        self.criterion = CrossEntropyLoss(ignore_index=0)
 
         self.encoder = encoder
         self.decoder = decoder
@@ -205,7 +212,7 @@ class AttentionTranslator(Module):
             target_vocabulary_size
         ).to(self.device)
 
-        encoder_outputs, hidden = self.encoder(src)
+        encoder_outputs, hidden = self.encoder(sources)
         decoder_input = targets[0, :]
 
         for t in range(1, target_len):
@@ -218,7 +225,7 @@ class AttentionTranslator(Module):
             outputs[t] = output
             top_1 = output.argmax(1)
 
-            teacher_force = random.random() < teacher_forcing_ratio
+            teacher_force = random.random() < self.teacher_forcing_ratio
             if teacher_force:
                 decoder_input = targets[t]
             else:
@@ -232,21 +239,18 @@ class AttentionTranslator(Module):
             batch_idx: int,
         ):
         de_tags, en_tags = batch
-        de_tags = de_tags.to(self.device)
-        en_tags = en_tags.to(self.device)
+        de_tags = de_tags.permute(1, 0).to(self.device)
+        en_tags = en_tags.permute(1, 0).to(self.device)
 
         pred_en_tags = self(
             sources=de_tags,
             targets=en_tags,
         )
-        pred_en_tags = F.log_softmax(
-            input=pred_en_tags,
-            dim=1,
-        )
         output_dim = pred_en_tags.shape[-1]
 
         pred_en_tags_2 = pred_en_tags[1:].view(-1, output_dim)
-        en_tags_2 = en_tags[1:].view(-1)
+
+        en_tags_2 = en_tags[1:].contiguous().view(-1) #TODO remove for GPU
 
         loss = self.criterion(
             input=pred_en_tags_2,

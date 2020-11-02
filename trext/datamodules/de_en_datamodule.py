@@ -21,8 +21,8 @@ class DeEnDataset(Dataset):
         return len(self.de_tags_lists)
 
     def __getitem__(self, idx: int) -> Tuple[Tensor, Tensor]:
-        de_tags = Tensor(self.de_tags_lists[idx])
-        en_tags = Tensor(self.en_tags_lists[idx])
+        de_tags = torch.tensor(self.de_tags_lists[idx], dtype=torch.int64)
+        en_tags = torch.tensor(self.en_tags_lists[idx], dtype=torch.int64)
 
         return (de_tags, en_tags)
 
@@ -92,7 +92,7 @@ class DeEnDataModule:
 
         return train_dataloader
 
-    def val_dataloder(self) -> DataLoader:
+    def val_dataloader(self) -> DataLoader:
         val_dataloader = DataLoader(
             dataset=self.val_dataset,
             batch_size=self.batch_size,

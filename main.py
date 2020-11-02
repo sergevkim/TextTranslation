@@ -18,8 +18,6 @@ def main(args):
     )
     datamodule.setup(val_ratio=0.1)
 
-    print(len(datamodule.de_vocabulary))
-
     encoder = Encoder(
         input_dim=len(datamodule.de_vocabulary),
         embedding_dim=args['encoder_embedding_dim'],
@@ -54,21 +52,24 @@ def main(args):
         print(b[0])
         break
     '''
-    '''
-    logger = NeptuneLogger()
-    trainer = Trainer()
+
+    trainer = Trainer(
+        logger=None,
+        max_epoch=args['max_epoch'],
+        verbose=args['verbose'],
+        version=args['version'],
+    )
 
     trainer.fit(
-        model=model,
+        model=translator,
         datamodule=datamodule,
-        logger=logger,
     )
 
     trainer.predict(
         model=translator,
         datamodule=datamodule,
     )
-    '''
+
 
 if __name__ == "__main__":
     parser = ArgumentParser()
@@ -82,6 +83,9 @@ if __name__ == "__main__":
         encoder_dropout_p=0.5,
         encoder_hidden_dim=512,
         encoder_embedding_dim=256,
+        max_epoch=1,
+        verbose=True,
+        version='v0.1',
     )
     main(args)
 
