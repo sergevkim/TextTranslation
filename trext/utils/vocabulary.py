@@ -17,6 +17,9 @@ class Vocabulary:
         self.token2count = dict()
         self.n_tokens = 3
 
+    def __len__(self):
+        return len(self.token2tag)
+
     def add_token(self, token: str):
         if token not in self.token2tag:
             self.token2tag[token] = self.n_tokens

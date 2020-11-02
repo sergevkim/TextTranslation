@@ -42,21 +42,21 @@ class DeEnDataModule:
         de_corpus_path = self.data_dir / 'train.de-en.de'
         en_corpus_path = self.data_dir / 'train.de-en.en'
 
-        de_vocabulary, de_max_length = Vocabulary.build_vocabulary(
+        self.de_vocabulary, de_max_length = Vocabulary.build_vocabulary(
             text_corpus_path=de_corpus_path,
         )
-        en_vocabulary, en_max_length = Vocabulary.build_vocabulary(
+        self.en_vocabulary, en_max_length = Vocabulary.build_vocabulary(
             text_corpus_path=en_corpus_path,
         )
 
         de_tags_lists = Editor.get_tags_lists(
             text_corpus_path=de_corpus_path,
-            vocabulary=de_vocabulary,
+            vocabulary=self.de_vocabulary,
             max_length=de_max_length,
         )
         en_tags_lists = Editor.get_tags_lists(
             text_corpus_path=en_corpus_path,
-            vocabulary=en_vocabulary,
+            vocabulary=self.en_vocabulary,
             max_length=en_max_length,
         )
 

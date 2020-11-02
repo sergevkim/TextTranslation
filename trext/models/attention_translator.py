@@ -1,7 +1,9 @@
+import random
 from typing import Tuple
 
 import einops
 import torch
+import torch.nn.functional as F
 from torch import Tensor
 from torch.nn import (
     Dropout,
@@ -9,80 +11,123 @@ from torch.nn import (
     GRU,
     Linear,
     Module,
+    NLLLoss,
 )
+from torch.optim import Adam
+from torch.optim.optimizer import Optimizer
 
 
 class Encoder(Module):
     def __init__(
             self,
             input_dim: int,
+            embedding_dim: int,
+            encoder_hidden_dim: int,
+            decoder_hidden_dim: int,
+            dropout_p: float,
         ):
         super().__init__()
 
-        self.embedding = Embedding()
-        self.rnn = GRU()
-        self.fc = Linear()
-        self.dropout = Dropout()
+        self.embedding = Embedding(
+            num_embeddings=input_dim,
+            embedding_dim=embedding_dim,
+        )
+        self.rnn = GRU(
+            input_size=embedding_dim,
+            hidden_size=encoder_hidden_dim,
+            bidirectional=True,
+        )
+        self.fc = Linear(
+            in_features=encoder_hidden_dim * 2,
+            out_features=decoder_hidden_dim,
+        )
+        self.dropout = Dropout(
+            p=dropout_p,
+            inplace=True,
+        )
 
     def forward(
             self,
             x: Tensor,
         ) -> Tuple[Tensor]:
 
-        embedded_x = self.dropout(self.embedding(x))
+        x_1 = self.embedding(x)
+        x_2 = self.dropout(x_1)
 
-        outputs, hidden = self.rnn(embedded_x)
+        outputs, hidden = self.rnn(x_2)
 
-        hidden = None #torch.tanh()
+        hidden_1 = torch.cat(
+            tensors=(hidden[-2, :, :], hidden[-1, :, :]),
+            dim = 1,
+        )
+        hidden_2 = self.fc(hidden_1)
+        hidden_3 = torch.tanh(hidden_2)
 
-        return outputs, hidden
+        return outputs, hidden_3
 
 
 class Attention(Module):
     def __init__(
             self,
+            encoder_hidden_dim: int,
+            decoder_hidden_dim: int,
         ):
         super().__init__()
 
+        self.attn = Linear(
+            in_features=encoder_hidden_dim * 2 + decoder_hidden_dim,
+            out_features=decoder_hidden_dim,
+        )
+        self.v = Linear(
+            in_features=decoder_hidden_dim,
+            out_features=1,
+            bias=False,
+        )
+
     def forward(
             self,
-            decoder_hidden: Tensor,
+            hidden: Tensor,
             encoder_outputs: Tensor,
         ) -> Tensor:
+        batch_size, source_len = decoder_outputs.shape
+        hidden = hidden.unsqueeze(1).repeat(1, src_len, 1)
+        encoder_outputs = encoder_outputs.permute(1, 0, 2)
+        cats = torch.cat(
+            (hidden, encoder_outputs),
+            dim=2,
+        )
+        energy = torch.tanh(self.attn(cats))
+        attention = self.v(energy).squeeze(2)
 
-        energy = torch.tanh()
-
-        attention = torch.sum(energy, dim=2)
-
-        return torch.nn.functional.softmax(attention, dim=1)
-
-
-class Attention(Module):
-    def __init__(self):
-        super(Attention, self).__init__()
-
-    def forward(self, K, V, Q):
-        A = torch.bmm(K.transpose(1,2), Q) / np.sqrt(Q.shape[1])
-        A = F.softmax(A, 1)
-        R = torch.bmm(V, A)
-        return torch.cat((R, Q), dim=1)
-
-
-def attention(K, V, Q):
-    _, n_channels, _ = K.shape
-    A = torch.einsum('bct,bcl->btl', [K, Q])
-    A = F.softmax(A * n_channels ** (-0.5), 1)
-    R = torch.einsum('bct,btl->bcl', [V, A])
-    return torch.cat((R, Q), dim=1)
+        return F.softmax(attention, dim=1)
 
 
 class Decoder(Module):
     def __init__(
             self,
             output_dim: int,
+            embedding_dim: int,
+            encoder_hidden_dim: int,
+            decoder_hidden_dim: int,
+            dropout_p: float,
             attention: Module,
         ):
         super().__init__()
+
+        self.attention = attention
+        self.embedding = Embedding(
+            num_embeddings=output_dim,
+            embedding_dim=embedding_dim,
+        )
+        self.rnn = GRU(
+            input_size=encoder_hidden_dim * 2 + embedding_dim,
+            hidden_size=decoder_hidden_dim,
+        )
+        self.fc = Linear(
+            in_features=\
+                encoder_hidden_dim * 2 + embedding_dim + decoder_hidden_dim,
+            out_features=output_dim,
+        )
 
     def forward(
             self,
@@ -90,7 +135,44 @@ class Decoder(Module):
             decoder_hidden: Tensor,
             encoder_outputs: Tensor,
         ) -> Tuple[Tensor]:
-        pass
+        x_1 = x.unsqueeze(0)
+        x_2 = self.embedding(x_1)
+        x_3 = self.dropout(x_2)
+
+        a = self.attention(
+            hidden,
+            encoder_outputs,
+        )
+        a = a.unsqueeze(1)
+
+        #TODO
+        encoder_outputs = encoder_outputs.permute(1, 0, 2)
+        weighted = torch.bmm(a, encoder_outputs)
+        weighted = weighted.permute(1, 0, 2)
+
+        rnn_input = torch.cat(
+            (x_3, weighted),
+            dim=2,
+        )
+
+        output, hidden = self.rnn(
+            rnn_input,
+            hidden.unsqueeze(0),
+        )
+
+        assert (output == hidden).all()
+
+        x_4 = x_3.squeeze(0)
+        output = output.squeeze(0)
+        weighted = weighted.squeeze(0)
+
+        cats = torch.cat(
+            (output, weighted, x_4),
+            dim=1,
+        )
+        prediction = self.fc(cats)
+
+        return prediction, hidden.squeeze(0)
 
 
 class AttentionTranslator(Module):
@@ -98,23 +180,105 @@ class AttentionTranslator(Module):
             self,
             encoder: Module,
             decoder: Module,
+            teacher_forcing_ratio: float,
+            learning_rate: float,
             device: torch.device,
         ):
         super().__init__()
 
         self.device = device
+        self.teacher_forcing_ratio = teacher_forcing_ratio
+
         self.encoder = encoder
         self.decoder = decoder
 
     def forward(
             self,
-            source: Tensor,
-            target: Tensor,
+            sources: Tensor,
+            targets: Tensor,
         ):
-        pass
+        target_len, batch_size = targets.shape
+        target_vocabulary_size = self.decoder.output_dim
+        outputs = torch.zeros(
+            target_len,
+            batch_size,
+            target_vocabulary_size
+        ).to(self.device)
+
+        encoder_outputs, hidden = self.encoder(src)
+        decoder_input = targets[0, :]
+
+        for t in range(1, target_len):
+            output, hidden = self.decoder(
+                x=decoder_input,
+                decoder_hidden=hidden,
+                encoder_outputs=encoder_outputs,
+            )
+
+            outputs[t] = output
+            top_1 = output.argmax(1)
+
+            teacher_force = random.random() < teacher_forcing_ratio
+            if teacher_force:
+                decoder_input = targets[t]
+            else:
+                decoder_input = top_1
+
+        return outputs
 
     def training_step(
             self,
+            batch: Tensor,
+            batch_idx: int,
         ):
+        de_tags, en_tags = batch
+        de_tags = de_tags.to(self.device)
+        en_tags = en_tags.to(self.device)
+
+        pred_en_tags = self(
+            sources=de_tags,
+            targets=en_tags,
+        )
+        pred_en_tags = F.log_softmax(
+            input=pred_en_tags,
+            dim=1,
+        )
+        output_dim = pred_en_tags.shape[-1]
+
+        pred_en_tags_2 = pred_en_tags[1:].view(-1, output_dim)
+        en_tags_2 = en_tags[1:].view(-1)
+
+        loss = self.criterion(
+            input=pred_en_tags_2,
+            target=en_tags_2,
+        )
+
+        return loss
+
+    def training_step_end(self):
         pass
+
+    def training_epoch_end(self):
+        pass
+
+    def validation_step(
+            self,
+            batch: Tensor,
+            batch_idx: int,
+        ) -> Tensor:
+        pass
+
+    def validation_step_end(self):
+        pass
+
+    def validation_epoch_end(self):
+        pass
+
+    def configure_optimizers(self) -> Optimizer:
+        optimizer = Adam(
+            params=self.parameters(),
+            lr=self.learning_rate,
+        )
+
+        return optimizer
 

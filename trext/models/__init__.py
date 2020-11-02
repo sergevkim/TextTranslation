@@ -1,3 +1,7 @@
 from .attention_translator import AttentionTranslator
-from .simple_translator import SimpleTranslator
+from .attention_translator import (
+    Encoder,
+    Decoder,
+    Attention,
+)
 

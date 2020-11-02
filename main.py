@@ -5,25 +5,55 @@ import torch
 
 from trext.datamodules import DeEnDataModule
 from trext.loggers import NeptuneLogger
-#from trext.models import SimpleTranslator
+from trext.models import AttentionTranslator, Encoder, Decoder, Attention
 from trext.trainer import Trainer
 from trext.utils import Editor, Vocabulary
 
 
 def main(args):
-    #model = SimpleTranslator()
     datamodule = DeEnDataModule(
-        data_dir = Path('data/homework_machine_translation_de-en'),
+        data_dir=Path('data/homework_machine_translation_de-en'),
         batch_size=2,
         num_workers=4,
     )
     datamodule.setup(val_ratio=0.1)
-    loader = datamodule.train_dataloader()
 
+    print(len(datamodule.de_vocabulary))
+
+    encoder = Encoder(
+        input_dim=len(datamodule.de_vocabulary),
+        embedding_dim=args['encoder_embedding_dim'],
+        encoder_hidden_dim=args['encoder_hidden_dim'],
+        decoder_hidden_dim=args['decoder_hidden_dim'],
+        dropout_p=args['encoder_dropout_p'],
+    )
+    attention = Attention(
+        encoder_hidden_dim=args['encoder_hidden_dim'],
+        decoder_hidden_dim=args['decoder_hidden_dim'],
+    )
+    decoder = Decoder(
+        output_dim=len(datamodule.en_vocabulary),
+        embedding_dim=args['decoder_embedding_dim'],
+        encoder_hidden_dim=args['encoder_hidden_dim'],
+        decoder_hidden_dim=args['decoder_hidden_dim'],
+        dropout_p=args['decoder_dropout_p'],
+        attention=attention,
+    )
+    translator = AttentionTranslator(
+        encoder=encoder,
+        decoder=decoder,
+        teacher_forcing_ratio=0.5,
+        learning_rate=3e-4,
+        device=args['device'],
+    )
+
+    '''
+    loader = datamodule.train_dataloader()
     print(len(loader))
     for i, b in enumerate(loader):
         print(b[0])
         break
+    '''
     '''
     logger = NeptuneLogger()
     trainer = Trainer()
@@ -35,7 +65,7 @@ def main(args):
     )
 
     trainer.predict(
-        model=model,
+        model=translator,
         datamodule=datamodule,
     )
     '''
@@ -45,8 +75,13 @@ if __name__ == "__main__":
     args = parser.parse_args()
     args = dict(
         attn_dim=8,
+        decoder_dropout_p=0.5,
+        decoder_hidden_dim=512,
+        decoder_embedding_dim=256,
         device=torch.device('cuda' if torch.cuda.is_available() else 'cpu'),
-        enc_emb_dim=256,
+        encoder_dropout_p=0.5,
+        encoder_hidden_dim=512,
+        encoder_embedding_dim=256,
     )
     main(args)
 
