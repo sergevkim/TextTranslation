@@ -5,7 +5,7 @@ import torch
 from torch import Tensor
 from torch.utils.data import Dataset, DataLoader
 
-from trext.utils import Editor, Vocabulary
+from ..utils import Editor, Vocabulary
 
 
 class DeEnDataset(Dataset):

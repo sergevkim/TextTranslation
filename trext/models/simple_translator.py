@@ -2,6 +2,7 @@ from typing import Tuple
 
 import einops
 import torch
+import torch.nn.functional as F
 from torch import Tensor
 from torch.nn import (
     Dropout,
@@ -9,6 +10,7 @@ from torch.nn import (
     GRU,
     Linear,
     Module,
+    NLLLoss,
 )
 
 
@@ -73,10 +75,31 @@ class SimpleTranslator(Module):
             source: Tensor,
             target: Tensor,
         ):
+
         pass
 
     def training_step(
             self,
+            batch: Tensor,
+            batch_idx: int,
         ):
-        pass
+        de_tags, en_tags = batch
+        de_tags = de_tags.to(self.device)
+        en_tags = en_tags.to(self.device)
+
+        pred_en_tags = self(
+            de_tags,
+            en_tags,
+        )
+        pred_en_tags = F.log_softmax(
+            pred_en_tags,
+            dim=1,
+        )
+
+        loss = self.criterion(
+            input=pred_en_tags,
+            target=en_tags,
+        )
+
+        return loss
 

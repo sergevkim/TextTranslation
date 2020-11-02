@@ -1,7 +1,7 @@
 from pathlib import Path
 from typing import List
 
-from trext.utils.editor import Editor
+from .editor import Editor
 
 
 class Vocabulary:
