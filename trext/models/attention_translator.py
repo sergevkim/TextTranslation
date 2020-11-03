@@ -206,11 +206,11 @@ class AttentionTranslator(Module):
         ):
         target_len, batch_size = targets.shape
         target_vocabulary_size = self.decoder.output_dim
-        outputs = torch.zeros(
+        outputs = torch.zeros((
             target_len,
             batch_size,
-            target_vocabulary_size
-        ).to(self.device)
+            target_vocabulary_size,
+        )).to(self.device)
 
         encoder_outputs, hidden = self.encoder(sources)
         decoder_input = targets[0, :]
@@ -225,11 +225,11 @@ class AttentionTranslator(Module):
             outputs[t] = output
             top_1 = output.argmax(1)
 
-            teacher_force = random.random() < self.teacher_forcing_ratio
-            if teacher_force:
-                decoder_input = targets[t]
-            else:
-                decoder_input = top_1
+            #teacher_force = random.random() < self.teacher_forcing_ratio
+            #if teacher_force:
+            #    decoder_input = targets[t]
+            #else:
+            decoder_input = top_1
 
         return outputs
 

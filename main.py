@@ -15,7 +15,7 @@ def main(args):
 
     datamodule = DeEnDataModule(
         data_dir=Path('data/homework_machine_translation_de-en'),
-        batch_size=2,
+        batch_size=args['batch_size'],
         num_workers=4,
     )
     datamodule.setup()
@@ -80,6 +80,7 @@ if __name__ == "__main__":
     args = parser.parse_args()
     args = dict(
         attn_dim=8,
+        batch_size=32,
         decoder_dropout_p=0.5,
         decoder_hidden_dim=512,
         decoder_embedding_dim=256,
