@@ -65,7 +65,7 @@ def main(args):
         datamodule=datamodule,
     )
 
-    trainer.predict(
+    predicts = trainer.predict(
         model=translator,
         datamodule=datamodule,
     )

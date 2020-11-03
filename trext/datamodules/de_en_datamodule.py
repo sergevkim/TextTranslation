@@ -39,48 +39,75 @@ class DeEnDataModule:
         self.num_workers = num_workers
 
     def prepare_data(self):
-        de_corpus_path = self.data_dir / 'train.de-en.de'
-        en_corpus_path = self.data_dir / 'train.de-en.en'
+        de_train_corpus_path = self.data_dir / 'train.de-en.de'
+        en_train_corpus_path = self.data_dir / 'train.de-en.en'
+        de_val_corpus_path = self.data_dir / 'train.de-en.de'
+        en_val_corpus_path = self.data_dir / 'train.de-en.en'
+        de_test_corpus_path = self.data_dir / 'train.de-en.de'
 
         self.de_vocabulary, de_max_length = Vocabulary.build_vocabulary(
-            text_corpus_path=de_corpus_path,
+            text_corpus_path=de_train_corpus_path,
         )
         self.en_vocabulary, en_max_length = Vocabulary.build_vocabulary(
-            text_corpus_path=en_corpus_path,
+            text_corpus_path=en_train_corpus_path,
         )
 
-        de_tags_lists = Editor.get_tags_lists(
-            text_corpus_path=de_corpus_path,
+        de_train_tags_lists = Editor.get_tags_lists(
+            text_corpus_path=de_train_corpus_path,
             vocabulary=self.de_vocabulary,
             max_length=de_max_length,
         )
-        en_tags_lists = Editor.get_tags_lists(
-            text_corpus_path=en_corpus_path,
+        en_train_tags_lists = Editor.get_tags_lists(
+            text_corpus_path=en_train_corpus_path,
             vocabulary=self.en_vocabulary,
             max_length=en_max_length,
         )
-
-        data = dict(
-            de_tags_lists=de_tags_lists,
-            en_tags_lists=en_tags_lists,
+        de_val_tags_lists = Editor.get_tags_lists(
+            text_corpus_path=de_val_corpus_path,
+            vocabulary=self.de_vocabulary,
+            max_length=de_max_length,
+        )
+        en_val_tags_lists = Editor.get_tags_lists(
+            text_corpus_path=en_val_corpus_path,
+            vocabulary=self.en_vocabulary,
+            max_length=en_max_length,
+        )
+        de_test_tags_lists = Editor.get_tags_lists(
+            text_corpus_path=de_test_corpus_path,
+            vocabulary=self.de_vocabulary,
+            max_length=de_max_length,
         )
 
-        return data
-
-    def setup(self, val_ratio: float):
-        data = self.prepare_data()
-        full_dataset = DeEnDataset(
-            de_tags_lists=data['de_tags_lists'],
-            en_tags_lists=data['en_tags_lists'],
+        train_data = dict(
+            de_tags_lists=de_train_tags_lists,
+            en_tags_lists=en_train_tags_lists,
+        )
+        val_data = dict(
+            de_tags_lists=de_val_tags_lists,
+            en_tags_lists=en_val_tags_lists,
+        )
+        test_data = dict(
+            de_tags_lists=de_test_tags_lists,
+            en_tags_lists=de_test_tags_lists, #TODO remove
         )
 
-        full_size = len(full_dataset)
-        val_size = int(val_ratio * full_size)
-        train_size = full_size - val_size
+        return train_data, val_data, test_data
 
-        self.train_dataset, self.val_dataset = torch.utils.data.random_split(
-            dataset=full_dataset,
-            lengths=[train_size, val_size],
+    def setup(self):
+        train_data, val_data, test_data = self.prepare_data()
+
+        self.train_dataset = DeEnDataset(
+            de_tags_lists=train_data['de_tags_lists'],
+            en_tags_lists=train_data['en_tags_lists'],
+        )
+        self.val_dataset = DeEnDataset(
+            de_tags_lists=val_data['de_tags_lists'],
+            en_tags_lists=val_data['en_tags_lists'],
+        )
+
+        self.test_dataset = DeEnDataset(
+            de_tags_lists=test_data['de_tags_lists'],
+            en_tags_lists=test_data['en_tags_lists'],
         )
 
     def train_dataloader(self) -> DataLoader:
@@ -102,5 +129,11 @@ class DeEnDataModule:
         return val_dataloader
 
     def test_dataloader(self):
-        pass
+        test_dataloader = DataLoader(
+            dataset=self.test_dataset,
+            batch_size=1,
+            num_workers=self.num_workers,
+        )
+
+        return test_dataloader
 

@@ -95,10 +95,22 @@ class Trainer:
 
         return model
 
+    @torch.no_grad
     def predict(
             self,
             model,
             datamodule,
         ):
-        pass
+        test_dataloader = datamodule.test_dataloader()
+
+        predicts = list()
+
+        for batch_idx, batch in enumerate(test_loader):
+            predict = model.test_step(batch, batch_idx)
+            predicts.append(predict)
+            model.test_step_end()
+
+        model.test_epoch_end()
+
+        return predicts
 

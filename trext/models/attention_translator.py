@@ -278,6 +278,28 @@ class AttentionTranslator(Module):
     def validation_epoch_end(self):
         pass
 
+    def test_step(
+            self,
+            batch: Tensor,
+            batch_idx: int,
+        ) -> Tensor:
+        de_tags, en_tags = batch
+        de_tags = de_tags.permute(1, 0).to(self.device)
+        en_tags = en_tags.permute(1, 0).to(self.device)
+
+        pred_en_tags = self(
+            sources=de_tags,
+            targets=en_tags,
+        )
+
+        return pred_en_tags
+
+    def test_step_end(self):
+        pass
+
+    def test_epoch_end(self):
+        pass
+
     def configure_optimizers(self) -> Optimizer:
         optimizer = Adam(
             params=self.parameters(),
