@@ -11,12 +11,14 @@ from trext.utils import Editor, Vocabulary
 
 
 def main(args):
+    print(f"Device is: {args['device']}")
+
     datamodule = DeEnDataModule(
         data_dir=Path('data/homework_machine_translation_de-en'),
         batch_size=2,
         num_workers=4,
     )
-    datamodule.setup(val_ratio=0.1)
+    datamodule.setup()
 
     encoder = Encoder(
         input_dim=len(datamodule.de_vocabulary),
@@ -43,7 +45,7 @@ def main(args):
         teacher_forcing_ratio=0.5,
         learning_rate=3e-4,
         device=args['device'],
-    )
+    ).to(args['device'])
 
     '''
     loader = datamodule.train_dataloader()
@@ -60,11 +62,13 @@ def main(args):
         version=args['version'],
     )
 
+    print('Let\'s start training!')
     trainer.fit(
         model=translator,
         datamodule=datamodule,
     )
 
+    print('Predicts!')
     predicts = trainer.predict(
         model=translator,
         datamodule=datamodule,

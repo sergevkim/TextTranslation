@@ -1,6 +1,7 @@
 from pathlib import Path
 
 import torch
+import torch.nn.utils as utils
 import tqdm
 
 
@@ -46,7 +47,7 @@ class Trainer:
         for batch_idx, batch in enumerate(tqdm.tqdm(train_dataloader)):
             loss = model.training_step(batch, batch_idx)
             loss.backward()
-            clip_grad_norm_(parameters=model.parameters(), max_norm=10)
+            utils.clip_grad_norm_(parameters=model.parameters(), max_norm=10)
             optimizer.step()
             optimizer.zero_grad()
             model.training_step_end()
@@ -95,7 +96,7 @@ class Trainer:
 
         return model
 
-    @torch.no_grad
+    @torch.no_grad()
     def predict(
             self,
             model,
