@@ -104,8 +104,8 @@ class DeEnDataModule:
         train_data, val_data, test_data = self.prepare_data()
 
         self.train_dataset = DeEnDataset(
-            de_tags_lists=train_data['de_tags_lists'][:1000],
-            en_tags_lists=train_data['en_tags_lists'][:1000],
+            de_tags_lists=train_data['de_tags_lists'],
+            en_tags_lists=train_data['en_tags_lists'],
         )
         self.val_dataset = DeEnDataset(
             de_tags_lists=val_data['de_tags_lists'],

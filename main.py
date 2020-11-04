@@ -83,18 +83,17 @@ if __name__ == "__main__":
     parser = ArgumentParser()
     args = parser.parse_args()
     args = dict(
-        attn_dim=8,
-        batch_size=32,
+        batch_size=64,
         decoder_dropout_p=0.5,
-        decoder_hidden_dim=512,
-        decoder_embedding_dim=256,
+        decoder_hidden_dim=128,
+        decoder_embedding_dim=128,
         device=torch.device('cuda' if torch.cuda.is_available() else 'cpu'),
         encoder_dropout_p=0.5,
-        encoder_hidden_dim=512,
-        encoder_embedding_dim=256,
-        max_epoch=2,
+        encoder_hidden_dim=128,
+        encoder_embedding_dim=128,
+        max_epoch=10,
         verbose=True,
-        version='v0.1',
+        version='0.1',
     )
     main(args)
 

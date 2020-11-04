@@ -263,21 +263,40 @@ class AttentionTranslator(Module):
     def training_step_end(self):
         pass
 
-    def training_epoch_end(self):
-        pass
+    def training_epoch_end(self, epoch_idx):
+        print(f"Training epoch #{epoch_idx} is over.")
 
     def validation_step(
             self,
             batch: Tensor,
             batch_idx: int,
         ) -> Tensor:
-        pass
+        de_tags, en_tags = batch
+        de_tags = de_tags.permute(1, 0).to(self.device)
+        en_tags = en_tags.permute(1, 0).to(self.device)
+
+        pred_en_tags = self(
+            sources=de_tags,
+            targets=en_tags,
+        )
+        output_dim = pred_en_tags.shape[-1]
+
+        pred_en_tags_2 = pred_en_tags[1:].view(-1, output_dim)
+
+        en_tags_2 = en_tags[1:].contiguous().view(-1) #TODO remove for GPU
+
+        loss = self.criterion(
+            input=pred_en_tags_2,
+            target=en_tags_2,
+        )
+
+        return loss
 
     def validation_step_end(self):
         pass
 
-    def validation_epoch_end(self):
-        pass
+    def validation_epoch_end(self, epoch_idx):
+        print(f"Validation epoch #{epoch_idx} is over.")
 
     def test_step(
             self,
