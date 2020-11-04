@@ -1,24 +1,28 @@
+import time
 from argparse import ArgumentParser
 from pathlib import Path
 
 import torch
 
 from trext.datamodules import DeEnDataModule
-from trext.loggers import NeptuneLogger
+#from trext.loggers import NeptuneLogger
 from trext.models import AttentionTranslator, Encoder, Decoder, Attention
 from trext.trainer import Trainer
 from trext.utils import Editor, Vocabulary
 
 
 def main(args):
+    start_time = time.time()
     print(f"Device is: {args['device']}")
 
+    print("Preparing datamodule...")
     datamodule = DeEnDataModule(
         data_dir=Path('data/homework_machine_translation_de-en'),
         batch_size=args['batch_size'],
         num_workers=4,
     )
     datamodule.setup()
+    print(f"Datamodule is prepared ({time.time() - start_time} seconds)")
 
     encoder = Encoder(
         input_dim=len(datamodule.de_vocabulary),
@@ -88,7 +92,7 @@ if __name__ == "__main__":
         encoder_dropout_p=0.5,
         encoder_hidden_dim=512,
         encoder_embedding_dim=256,
-        max_epoch=3,
+        max_epoch=2,
         verbose=True,
         version='v0.1',
     )

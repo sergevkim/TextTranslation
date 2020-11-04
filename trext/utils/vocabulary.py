@@ -31,12 +31,12 @@ class Vocabulary:
 
     @staticmethod
     def build_vocabulary(
-            text_corpus_path: Path,
+            text_corpus_paths: List[Path],
         ):
         vocabulary = Vocabulary()
         max_length = 0
 
-        lines = Editor.get_lines(text_corpus_path=text_corpus_path)
+        lines = Editor.get_lines(text_corpus_paths=text_corpus_paths)
 
         for line in lines:
             tokens = line.split()

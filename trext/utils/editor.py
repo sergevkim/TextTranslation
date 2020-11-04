@@ -1,5 +1,5 @@
 from pathlib import Path
-from typing import List
+from typing import List, Union
 
 import torch.nn.utils.rnn as rnn
 
@@ -7,10 +7,13 @@ import torch.nn.utils.rnn as rnn
 class Editor:
     @staticmethod
     def get_lines(
-            text_corpus_path: Path,
+            text_corpus_paths: List[Path],
         ):
-        with open(text_corpus_path) as f:
-            lines = f.readlines()
+        lines = list()
+
+        for text_corpus_path in text_corpus_paths:
+            with open(text_corpus_path) as f:
+                lines += f.readlines()
 
         return lines
 
@@ -30,7 +33,7 @@ class Editor:
     def tokens_lists2tags_lists(
             tokens_lists: List[List[str]],
             vocabulary,
-            max_length,
+            max_length: int,
         ) -> List[List[int]]:
         tags_lists = list()
 
@@ -52,17 +55,20 @@ class Editor:
     @classmethod
     def get_tags_lists(
             cls,
-            text_corpus_path: Path,
+            text_corpus_paths: Union[Path, List[Path]],
             vocabulary,
-            max_length,
+            max_length: int,
         ) -> List[List[int]]:
-        lines = cls.get_lines(text_corpus_path=text_corpus_path)
-        tokens_lists = cls.lines2tokens_lists(lines=lines)
-        tags_lists = cls.tokens_lists2tags_lists(
-            tokens_lists=tokens_lists,
-            vocabulary=vocabulary,
-            max_length=max_length,
-        )
+        tags_lists = list()
+
+        for text_corpus_path in text_corpus_paths:
+            lines = cls.get_lines(text_corpus_paths=[text_corpus_path])
+            tokens_lists = cls.lines2tokens_lists(lines=lines)
+            tags_lists += cls.tokens_lists2tags_lists(
+                tokens_lists=tokens_lists,
+                vocabulary=vocabulary,
+                max_length=max_length,
+            )
 
         return tags_lists
 

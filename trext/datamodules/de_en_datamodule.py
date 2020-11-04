@@ -39,41 +39,48 @@ class DeEnDataModule:
         self.num_workers = num_workers
 
     def prepare_data(self):
-        de_train_corpus_path = self.data_dir / 'train_2.de-en.de'
-        en_train_corpus_path = self.data_dir / 'train_2.de-en.en'
-        de_val_corpus_path = self.data_dir / 'train_2.de-en.de'
-        en_val_corpus_path = self.data_dir / 'train_2.de-en.en'
-        de_test_corpus_path = self.data_dir / 'train_2.de-en.de'
+        de_train_corpus_path = self.data_dir / 'train.de-en.de'
+        en_train_corpus_path = self.data_dir / 'train.de-en.en'
+        de_val_corpus_path = self.data_dir / 'val.de-en.de'
+        en_val_corpus_path = self.data_dir / 'val.de-en.en'
+        de_test_corpus_path = self.data_dir / 'test1.de-en.de'
 
         self.de_vocabulary, de_max_length = Vocabulary.build_vocabulary(
-            text_corpus_path=de_train_corpus_path,
+            text_corpus_paths=[
+                de_train_corpus_path,
+                de_val_corpus_path,
+                de_test_corpus_path,
+            ],
         )
         self.en_vocabulary, en_max_length = Vocabulary.build_vocabulary(
-            text_corpus_path=en_train_corpus_path,
+            text_corpus_paths=[
+                en_train_corpus_path,
+                en_val_corpus_path,
+            ],
         )
 
         de_train_tags_lists = Editor.get_tags_lists(
-            text_corpus_path=de_train_corpus_path,
+            text_corpus_paths=[de_train_corpus_path],
             vocabulary=self.de_vocabulary,
             max_length=de_max_length,
         )
         en_train_tags_lists = Editor.get_tags_lists(
-            text_corpus_path=en_train_corpus_path,
+            text_corpus_paths=[en_train_corpus_path],
             vocabulary=self.en_vocabulary,
             max_length=en_max_length,
         )
         de_val_tags_lists = Editor.get_tags_lists(
-            text_corpus_path=de_val_corpus_path,
+            text_corpus_paths=[de_val_corpus_path],
             vocabulary=self.de_vocabulary,
             max_length=de_max_length,
         )
         en_val_tags_lists = Editor.get_tags_lists(
-            text_corpus_path=en_val_corpus_path,
+            text_corpus_paths=[en_val_corpus_path],
             vocabulary=self.en_vocabulary,
             max_length=en_max_length,
         )
         de_test_tags_lists = Editor.get_tags_lists(
-            text_corpus_path=de_test_corpus_path,
+            text_corpus_paths=[de_test_corpus_path],
             vocabulary=self.de_vocabulary,
             max_length=de_max_length,
         )
@@ -97,8 +104,8 @@ class DeEnDataModule:
         train_data, val_data, test_data = self.prepare_data()
 
         self.train_dataset = DeEnDataset(
-            de_tags_lists=train_data['de_tags_lists'],
-            en_tags_lists=train_data['en_tags_lists'],
+            de_tags_lists=train_data['de_tags_lists'][:1000],
+            en_tags_lists=train_data['en_tags_lists'][:1000],
         )
         self.val_dataset = DeEnDataset(
             de_tags_lists=val_data['de_tags_lists'],
