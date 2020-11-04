@@ -165,7 +165,8 @@ class Decoder(Module):
             decoder_hidden.unsqueeze(0),
         )
 
-        assert (output == hidden).all()
+        if not (output == hidden).all():
+            print(output.shape, hidden.shape)
 
         x_4 = x_3.squeeze(0)
         output = output.squeeze(0)
@@ -292,7 +293,11 @@ class AttentionTranslator(Module):
             targets=en_tags,
         )
 
-        return pred_en_tags
+        output_dim = pred_en_tags.shape[-1]
+        pred_en_tags_2 = pred_en_tags[1:].view(-1, output_dim)
+        en_tags_2 = en_tags[1:].contiguous().view(-1) #TODO remove for GPU
+
+        return pred_en_tags_2
 
     def test_step_end(self):
         pass

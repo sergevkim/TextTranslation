@@ -39,11 +39,11 @@ class DeEnDataModule:
         self.num_workers = num_workers
 
     def prepare_data(self):
-        de_train_corpus_path = self.data_dir / 'train.de-en.de'
-        en_train_corpus_path = self.data_dir / 'train.de-en.en'
-        de_val_corpus_path = self.data_dir / 'train.de-en.de'
-        en_val_corpus_path = self.data_dir / 'train.de-en.en'
-        de_test_corpus_path = self.data_dir / 'train.de-en.de'
+        de_train_corpus_path = self.data_dir / 'train_2.de-en.de'
+        en_train_corpus_path = self.data_dir / 'train_2.de-en.en'
+        de_val_corpus_path = self.data_dir / 'train_2.de-en.de'
+        en_val_corpus_path = self.data_dir / 'train_2.de-en.en'
+        de_test_corpus_path = self.data_dir / 'train_2.de-en.de'
 
         self.de_vocabulary, de_max_length = Vocabulary.build_vocabulary(
             text_corpus_path=de_train_corpus_path,

@@ -88,7 +88,7 @@ if __name__ == "__main__":
         encoder_dropout_p=0.5,
         encoder_hidden_dim=512,
         encoder_embedding_dim=256,
-        max_epoch=1,
+        max_epoch=3,
         verbose=True,
         version='v0.1',
     )

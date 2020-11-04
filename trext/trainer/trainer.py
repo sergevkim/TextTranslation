@@ -106,7 +106,7 @@ class Trainer:
 
         predicts = list()
 
-        for batch_idx, batch in enumerate(test_loader):
+        for batch_idx, batch in enumerate(test_dataloader):
             predict = model.test_step(batch, batch_idx)
             predicts.append(predict)
             model.test_step_end()

@@ -40,7 +40,7 @@ class Vocabulary:
 
         for line in lines:
             tokens = line.split()
-            max_length = max(len(tokens), max_length)
+            max_length = max(len(tokens) + 2, max_length)
 
             for token in tokens:
                 vocabulary.add_token(token)
