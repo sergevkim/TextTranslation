@@ -5,3 +5,6 @@ from .attention_translator import (
     Attention,
 )
 
+from .transformer_translator import TransformerTranslator
+from .transformer_blocks import TransformerEncoder, TransformerDecoder
+
