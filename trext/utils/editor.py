@@ -30,6 +30,18 @@ class Editor:
         return tokens_lists
 
     @staticmethod
+    def tokens_lists2lines(
+            tokens_lists: List[List[str]]
+        ) -> List[str]:
+        lines = list()
+
+        for tokens in tokens_lists:
+            line = ' '.join(tokens)
+            lines.append(line)
+
+        return lines
+
+    @staticmethod
     def tokens_lists2tags_lists(
             tokens_lists: List[List[str]],
             vocabulary,
@@ -51,6 +63,26 @@ class Editor:
             tags_lists.append(tags)
 
         return tags_lists
+
+    @staticmethod
+    def tags_lists2tokens_lists(
+            tags_lists: List[List[int]],
+            vocabulary,
+        ) -> List[List[str]]:
+        tokens_lists = list()
+        print('!', tags_lists[0])
+        print('!!', tags_lists[0][0])
+
+        for tags in tags_lists:
+            tokens = list()
+
+            for tag in tags:
+                token = vocabulary.tag2token[tag]
+                tokens.append(token)
+
+            tokens_lists.append(tokens)
+
+        return tokens_lists
 
     @classmethod
     def get_tags_lists(

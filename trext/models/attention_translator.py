@@ -305,7 +305,6 @@ class AttentionTranslator(Module):
         ) -> Tensor:
         de_tags, en_tags = batch
         de_tags = de_tags.permute(1, 0).to(self.device)
-        en_tags = en_tags.permute(1, 0).to(self.device)
 
         pred_en_tags = self(
             sources=de_tags,
