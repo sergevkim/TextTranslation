@@ -166,7 +166,7 @@ class TransformerEncoder(Module):
                 pf_dim,
                 dropout,
                 device,
-            ) for _ in range(n_layers)
+            ).to(device) for _ in range(n_layers)
         ])
 
         self.dropout = nn.Dropout(dropout)
@@ -183,7 +183,9 @@ class TransformerEncoder(Module):
 
         pos = torch.arange(0, src_len).unsqueeze(0).repeat(batch_size, 1).to(self.device)
 
-        src = self.dropout((self.tok_embedding(src) * self.scale) + self.pos_embedding(pos))
+        a = self.tok_embedding(src)
+        b = self.pos_embedding(pos)
+        src = self.dropout(a * self.scale + b)
 
         for layer in self.layers:
             src = layer(src, src_mask)
@@ -231,7 +233,12 @@ class DecoderLayer(nn.Module):
             trg_mask,
             src_mask,
         ):
-        _trg, _ = self.self_attention(trg, trg, trg, trg_mask)
+        _trg, _ = self.self_attention(
+            trg,
+            trg,
+            trg,
+            trg_mask,
+        )
 
         trg = self.self_attn_layer_norm(trg + self.dropout(_trg))
 
@@ -277,7 +284,7 @@ class TransformerDecoder(nn.Module):
                 pf_dim,
                 dropout,
                 device,
-            ) for _ in range(n_layers)
+            ).to(device) for _ in range(n_layers)
         ])
 
         self.fc_out = nn.Linear(hid_dim, output_dim)

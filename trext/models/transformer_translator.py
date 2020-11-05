@@ -32,7 +32,6 @@ class TransformerTranslator(Module):
 
         self.device = device
         self.learning_rate = learning_rate
-        self.teacher_forcing_ratio = teacher_forcing_ratio
         self.criterion = CrossEntropyLoss(ignore_index=0)
 
         self.encoder = encoder
@@ -56,7 +55,7 @@ class TransformerTranslator(Module):
         ):
         target_pad_mask = (
             target != self.target_pad_idx
-        ).unsqueeze(1).unsqueeze(2)
+        ).unsqueeze(1).unsqueeze(2).to(self.device)
 
         target_len = target.shape[1]
 
@@ -98,19 +97,18 @@ class TransformerTranslator(Module):
             batch: Tensor,
             batch_idx: int,
         ):
-        de_tags, en_tags = batch
-        de_tags = de_tags.permute(1, 0).to(self.device)
-        en_tags = en_tags.permute(1, 0).to(self.device)
+        de_tags = batch.src.permute(1, 0).to(self.device)
+        en_tags = batch.trg.permute(1, 0).to(self.device)
 
-        pred_en_tags = self(
-            sources=de_tags,
-            targets=en_tags,
+        pred_en_tags, _ = self(
+            source=de_tags,
+            target=en_tags[:, :-1],
         )
         output_dim = pred_en_tags.shape[-1]
 
-        pred_en_tags_2 = pred_en_tags[1:].view(-1, output_dim)
+        pred_en_tags_2 = pred_en_tags.contiguous().view(-1, output_dim)
 
-        en_tags_2 = en_tags[1:].contiguous().view(-1) #TODO remove for GPU
+        en_tags_2 = en_tags[:, 1:].contiguous().view(-1)
 
         loss = self.criterion(
             input=pred_en_tags_2,
@@ -130,19 +128,18 @@ class TransformerTranslator(Module):
             batch: Tensor,
             batch_idx: int,
         ) -> Tensor:
-        de_tags, en_tags = batch
-        de_tags = de_tags.permute(1, 0).to(self.device)
-        en_tags = en_tags.permute(1, 0).to(self.device)
+        de_tags = batch.src.permute(1, 0).to(self.device)
+        en_tags = batch.trg.permute(1, 0).to(self.device)
 
-        pred_en_tags = self(
+        pred_en_tags, _ = self(
             sources=de_tags,
-            targets=en_tags,
+            targets=en_tags[:, :-1],
         )
         output_dim = pred_en_tags.shape[-1]
 
-        pred_en_tags_2 = pred_en_tags[1:].view(-1, output_dim)
+        pred_en_tags_2 = pred_en_tags.contiguous().view(-1, output_dim)
 
-        en_tags_2 = en_tags[1:].contiguous().view(-1) #TODO remove for GPU
+        en_tags_2 = en_tags[:, 1:].contiguous().view(-1) #TODO remove for GPU
 
         loss = self.criterion(
             input=pred_en_tags_2,
