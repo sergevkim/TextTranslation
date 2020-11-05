@@ -132,14 +132,14 @@ class TransformerTranslator(Module):
         en_tags = batch.trg.permute(1, 0).to(self.device)
 
         pred_en_tags, _ = self(
-            sources=de_tags,
-            targets=en_tags[:, :-1],
+            source=de_tags,
+            target=en_tags[:, :-1],
         )
         output_dim = pred_en_tags.shape[-1]
 
         pred_en_tags_2 = pred_en_tags.contiguous().view(-1, output_dim)
 
-        en_tags_2 = en_tags[:, 1:].contiguous().view(-1) #TODO remove for GPU
+        en_tags_2 = en_tags[:, 1:].contiguous().view(-1)
 
         loss = self.criterion(
             input=pred_en_tags_2,
