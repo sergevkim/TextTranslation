@@ -70,8 +70,6 @@ class Editor:
             vocabulary,
         ) -> List[List[str]]:
         tokens_lists = list()
-        print('!', tags_lists[0])
-        print('!!', tags_lists[0][0])
 
         for tags in tags_lists:
             tokens = list()
