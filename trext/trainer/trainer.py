@@ -69,6 +69,7 @@ class Trainer:
 
         for batch_idx, batch in enumerate(tqdm.tqdm(val_dataloader)):
             loss = model.validation_step(batch, batch_idx)
+            print(epoch_idx, loss.item())
             model.validation_step_end()
 
         model.validation_epoch_end(epoch_idx=epoch_idx)
@@ -82,6 +83,11 @@ class Trainer:
         val_dataloader = datamodule.val_dataloader()
         optimizer = model.configure_optimizers()
 
+        self.validation_epoch(
+            model=model,
+            val_dataloader=val_dataloader,
+            epoch_idx=0,
+        )
         for epoch_idx in range(1, self.max_epoch + 1):
             self.training_epoch(
                 model=model,
