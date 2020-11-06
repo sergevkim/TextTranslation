@@ -84,13 +84,13 @@ def main(args):
         version=args['version'],
     )
 
-    #print('Let\'s start training!')
-    #trainer.fit(
-    #    model=translator,
-    #    datamodule=datamodule,
-    #)
+    print('Let\'s start training!')
+    trainer.fit(
+        model=translator,
+        datamodule=datamodule,
+    )
 
-    checkpoint = torch.load('models/v0.1-e9.hdf5', map_location=args['device'])
+    checkpoint = torch.load(f'models/v{args["version"]}-e{args["max_epoch"] - 1}.hdf5', map_location=args['device'])
 
     model = TransformerTranslator(
         encoder=encoder,
@@ -101,32 +101,67 @@ def main(args):
         device=args['device'],
     ).to(args['device'])
     model.load_state_dict(checkpoint['model_state_dict'])
+    model.to(args['device'])
+    print(model.device)
 
-    for b in datamodule.val_dataloader():
-        outs = model.test_step(b, 1)
-        '''a = Editor.tags_lists2tokens_lists(
-        tags_lists=outs,
-        vocabulary=datamodule.en_vocabulary,
-        )'''
-        print(b.src.shape, outs.shape)
-        break
+    def tags2tokens(tags, vocab):
+        result = list()
 
-    def tags2tokens(indices, vocab):
-        sent = [vocab[i] for i in indices]
-        return ' '.join(sent)
+        for tag in tags:
+            token = vocab[tag]
+            if token == '<eos>' or token == '<pad>':
+                break
+            result.append(token)
 
-    a = outs.argmax(2)
+        return ' '.join(result)
 
-    for idx in range(10):
-        print(''.join(tags2tokens(a[idx], datamodule.TRG.vocab.itos)).replace('<pad>',''))
-        print(''.join(tags2tokens(b.trg[1:,idx], datamodule.TRG.vocab.itos)).replace('<pad>',''))
-        print()
+    f = open('test1.de-en.en', 'w')
 
-    #print('Predicts!')
-    #predicts = trainer.predict(
-    #    model=translator,
-    #    datamodule=datamodule,
-    #)
+    def translate_sentence(sentence, src_field, trg_field, model, device, max_len=50):
+        model.eval()
+
+        if isinstance(sentence, str):
+            nlp = spacy.load('de')
+            tokens = [token.text.lower() for token in nlp(sentence)]
+        else:
+            tokens = [token.lower() for token in sentence]
+
+        tokens = [src_field.init_token] + tokens + [src_field.eos_token]
+        src_indexes = [src_field.vocab.stoi[token] for token in tokens]
+        src_tensor = torch.LongTensor(src_indexes).unsqueeze(0).to(device)
+        src_mask = model.make_source_mask(src_tensor)
+
+        with torch.no_grad():
+            enc_src = model.encoder(src_tensor, src_mask)
+
+        trg_indexes = [trg_field.vocab.stoi[trg_field.init_token]]
+
+        for i in range(max_len):
+            trg_tensor = torch.LongTensor(trg_indexes).unsqueeze(0).to(device)
+            trg_mask = model.make_target_mask(trg_tensor)
+
+            with torch.no_grad():
+                output, attention = model.decoder(trg_tensor, enc_src, trg_mask, src_mask)
+
+            pred_token = output.argmax(2)[:,-1].item()
+            trg_indexes.append(pred_token)
+
+            if pred_token == trg_field.vocab.stoi[trg_field.eos_token]:
+                break
+
+        trg_tokens = [trg_field.vocab.itos[i] for i in trg_indexes]
+
+        return trg_tokens[1:], attention
+
+    for i in range(2998):
+        src = vars(datamodule.train_dataset.examples[i])['src']
+
+        translation, attention = translate_sentence(src, datamodule.SRC, datamodule.TRG, model, args['device'])
+        translation.pop()
+
+        print(' '.join(translation), file=f)
+        if i % 10 == 0:
+            print(i, ' '.join(translation))
 
 
 if __name__ == "__main__":
@@ -134,18 +169,18 @@ if __name__ == "__main__":
     args = parser.parse_args()
     args = dict(
         batch_size=64,
-        data_path=Path('data/homework_machine_translation_de-en'),
+        data_path=Path('homework_machine_translation_de-en'),
         decoder_dropout_p=0.1,
         decoder_hidden_dim=128,
         decoder_embedding_dim=128,
-        device=torch.device('cuda' if torch.cuda.is_available() else 'cpu'),
+        device=torch.device('cuda:0' if torch.cuda.is_available() else 'cpu'),
         encoder_dropout_p=0.1,
         encoder_hidden_dim=128,
         encoder_embedding_dim=128,
         max_epoch=10,
         num_workers=4,
         verbose=True,
-        version='0.1',
+        version='1.0',
     )
     main(args)
 

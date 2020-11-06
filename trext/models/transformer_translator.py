@@ -32,7 +32,7 @@ class TransformerTranslator(Module):
 
         self.device = device
         self.learning_rate = learning_rate
-        self.criterion = CrossEntropyLoss(ignore_index=0)
+        self.criterion = CrossEntropyLoss(ignore_index=target_pad_idx)
 
         self.encoder = encoder
         self.decoder = decoder

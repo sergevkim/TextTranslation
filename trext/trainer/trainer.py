@@ -66,12 +66,14 @@ class Trainer:
             epoch_idx: int,
         ):
         model.eval()
+        loss_sum = 0
 
         for batch_idx, batch in enumerate(tqdm.tqdm(val_dataloader)):
             loss = model.validation_step(batch, batch_idx)
-            print(epoch_idx, loss.item())
+            loss_sum += loss.item()
             model.validation_step_end()
 
+        print(epoch_idx, loss_sum)
         model.validation_epoch_end(epoch_idx=epoch_idx)
 
     def fit(
