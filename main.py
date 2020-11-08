@@ -34,19 +34,30 @@ def main(args):
     datamodule.setup()
     print(f"Datamodule is prepared ({time.time() - start_time} seconds)")
 
+    args['src_pad_idx'] = datamodule.SRC.vocab.stoi[datamodule.SRC.pad_token]
+    args['trg_pad_idx'] = datamodule.TRG.vocab.stoi[datamodule.TRG.pad_token]
+    args['input_dim'] = len(datamodule.SRC.vocab)
+    args['output_dim'] = len(datamodule.TRG.vocab)
+
+    new_translator = TransformerTranslator(
+        src_pad_idx=args['src_pad_idx'],
+        trg_pad_idx=args['trg_pad_idx'],
+        learning_rate=args['learning_rate'],
+        input_dim=args['input_dim'],
+        output_dim=args['output_dim'],
+        hidden_dim=args['hidden_dim'],
+        encoder_dropout_p=args['encoder_dropout_p'],
+        encoder_heads_num=args['encoder_heads_num'],
+        encoder_layers_num=args['encoder_layers_num'],
+        decoder_dropout_p=args['decoder_dropout_p'],
+        decoder_heads_num=args['decoder_heads_num'],
+        decoder_layers_num=args['decoder_layers_num'],
+    )
+    '''
     SRC_PAD_IDX = datamodule.SRC.vocab.stoi[datamodule.SRC.pad_token]
     TRG_PAD_IDX = datamodule.TRG.vocab.stoi[datamodule.TRG.pad_token]
     INPUT_DIM = len(datamodule.SRC.vocab)
     OUTPUT_DIM = len(datamodule.TRG.vocab)
-    HID_DIM = 256
-    ENC_LAYERS = 3
-    DEC_LAYERS = 3
-    ENC_HEADS = 8
-    DEC_HEADS = 8
-    ENC_PF_DIM = 512
-    DEC_PF_DIM = 512
-    ENC_DROPOUT = 0.1
-    DEC_DROPOUT = 0.1
 
     encoder = TransformerEncoder(
         INPUT_DIM,
@@ -76,7 +87,7 @@ def main(args):
         learning_rate=3e-4,
         device=args['device'],
     ).to(args['device'])
-
+    '''
     trainer = Trainer(
         logger=None,
         max_epoch=args['max_epoch'],
@@ -103,17 +114,6 @@ def main(args):
     model.load_state_dict(checkpoint['model_state_dict'])
     model.to(args['device'])
     print(model.device)
-
-    def tags2tokens(tags, vocab):
-        result = list()
-
-        for tag in tags:
-            token = vocab[tag]
-            if token == '<eos>' or token == '<pad>':
-                break
-            result.append(token)
-
-        return ' '.join(result)
 
     f = open('test1.de-en.en', 'w')
 
@@ -171,16 +171,22 @@ if __name__ == "__main__":
         batch_size=64,
         data_path=Path('homework_machine_translation_de-en'),
         decoder_dropout_p=0.1,
+        decoder_heads_num=8,
         decoder_hidden_dim=128,
-        decoder_embedding_dim=128,
+        decoder_layers_num=3,
+        decoder_pf_dim=512,
         device=torch.device('cuda:0' if torch.cuda.is_available() else 'cpu'),
         encoder_dropout_p=0.1,
+        encoder_heads_num=8,
         encoder_hidden_dim=128,
-        encoder_embedding_dim=128,
+        encoder_layers_num=3,
+        encoder_pf_dim=512,
+        hidden_dim=256,
         max_epoch=10,
         num_workers=4,
         verbose=True,
         version='1.0',
     )
+
     main(args)
 
