@@ -58,7 +58,7 @@ class MultiHeadAttentionLayer(Module):
 
         self.fc_o = nn.Linear(hidden_dim, hidden_dim)
 
-        self.dropout = nn.Dropout(dropout_p)
+        self.dropout = nn.Dropout(p=dropout_p)
 
         self.scale = torch.sqrt(torch.FloatTensor([self.head_dim])).to(device)
 
@@ -116,7 +116,7 @@ class EncoderLayer(nn.Module):
         self.positionwise_feedforward = PositionwiseFeedforwardLayer(
             hidden_dim=hidden_dim,
             pf_dim=pf_dim,
-            fropout_p=dropout_p,
+            dropout_p=dropout_p,
         )
         self.dropout = nn.Dropout(p=dropout_p)
 
@@ -230,7 +230,7 @@ class DecoderLayer(nn.Module):
             pf_dim=pf_dim,
             dropout_p=dropout_p,
         )
-        self.dropout = nn.Dropout(dropout)
+        self.dropout = nn.Dropout(p=dropout_p)
 
     def forward(
             self,
@@ -295,7 +295,7 @@ class TransformerDecoder(nn.Module):
 
         self.fc_out = nn.Linear(hidden_dim, output_dim)
 
-        self.dropout = nn.Dropout(dropout)
+        self.dropout = nn.Dropout(p=dropout_p)
 
         self.scale = torch.sqrt(torch.FloatTensor([hidden_dim])).to(device)
 

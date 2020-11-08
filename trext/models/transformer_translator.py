@@ -17,6 +17,11 @@ from torch.nn import (
 from torch.optim import Adam
 from torch.optim.optimizer import Optimizer
 
+from .transformer_blocks import (
+    TransformerDecoder,
+    TransformerEncoder,
+)
+
 
 class TransformerTranslator(Module):
     def __init__(
@@ -139,7 +144,7 @@ class TransformerTranslator(Module):
 
         loss = self.criterion(
             input=pred_en_tags_2,
-            trg=en_tags_2,
+            target=en_tags_2,
         )
 
         return loss
@@ -170,7 +175,7 @@ class TransformerTranslator(Module):
 
         loss = self.criterion(
             input=pred_en_tags_2,
-            trg=en_tags_2,
+            target=en_tags_2,
         )
 
         return loss
