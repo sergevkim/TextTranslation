@@ -109,8 +109,8 @@ def main(args):
         datamodule=datamodule,
     )
 
-    #checkpoint = torch.load(f'models/v{args["version"]}-e{args["max_epoch"]}.hdf5', map_location=args['device'])
-    checkpoint = torch.load(f'models/v{args["version"]}-e1.hdf5', map_location=args['device'])
+    checkpoint = torch.load(f'models/v{args["version"]}-e{args["max_epoch"]}.hdf5', map_location=args['device'])
+    #checkpoint = torch.load(f'models/v{args["version"]}-e1.hdf5', map_location=args['device'])
     translator.load_state_dict(checkpoint['model_state_dict'])
 
     f = open('test1.de-en.en', 'w')
@@ -145,7 +145,7 @@ if __name__ == "__main__":
         encoder_pf_dim=512,
         hidden_dim=256,
         learning_rate=3e-4,
-        max_epoch=0,
+        max_epoch=15,
         num_workers=4,
         verbose=True,
         version='1.1',
