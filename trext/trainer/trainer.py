@@ -102,12 +102,13 @@ class Trainer:
                 val_dataloader=val_dataloader,
                 epoch_idx=epoch_idx,
             )
-            self.save_checkpoint(
-                model=model,
-                optimizer=optimizer,
-                epoch_idx=epoch_idx,
-                checkpoints_dir=Path.cwd() / "models",
-            )
+            if epoch_idx % 2 == 1:
+                self.save_checkpoint(
+                    model=model,
+                    optimizer=optimizer,
+                    epoch_idx=epoch_idx,
+                    checkpoints_dir=Path.cwd() / "models",
+                )
 
         return model
 

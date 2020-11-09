@@ -22,58 +22,77 @@ def set_seed(seed=9):
     np.random.seed(seed)
 
 
-def main(args):
-    set_seed()
+def translate_sentence(sentence, src_field, trg_field, model, device, max_len=50):
+    model.eval()
 
+    if isinstance(sentence, str):
+        nlp = spacy.load('de')
+        tokens = [token.text.lower() for token in nlp(sentence)]
+    else:
+        tokens = [token.lower() for token in sentence]
+
+    tokens = [src_field.init_token] + tokens + [src_field.eos_token]
+    src_indexes = [src_field.vocab.stoi[token] for token in tokens]
+    src_tensor = torch.LongTensor(src_indexes).unsqueeze(0).to(device)
+    src_mask = model.make_src_mask(src_tensor)
+
+    with torch.no_grad():
+        enc_src = model.encoder(src_tensor, src_mask)
+
+    trg_indexes = [trg_field.vocab.stoi[trg_field.init_token]]
+
+    for i in range(max_len):
+        trg_tensor = torch.LongTensor(trg_indexes).unsqueeze(0).to(device)
+        trg_mask = model.make_trg_mask(trg_tensor)
+
+        with torch.no_grad():
+            output, attention = model.decoder(trg_tensor, enc_src, trg_mask, src_mask)
+
+        pred_token = output.argmax(2)[:,-1].item()
+        trg_indexes.append(pred_token)
+
+        if pred_token == trg_field.vocab.stoi[trg_field.eos_token]:
+            break
+
+    trg_tokens = [trg_field.vocab.itos[i] for i in trg_indexes]
+
+    return trg_tokens[1:], attention
+
+
+def main(args):
+    set_seed(seed=9)
     start_time = time.time()
+    print(f"Device: {args['device']}")
+
     datamodule = DeEnBucketsDataModule(
         data_path=args['data_path'],
         batch_size=args['batch_size'],
         num_workers=args['num_workers'],
     )
     datamodule.setup()
-    print(f"Datamodule is prepared ({time.time() - start_time} seconds)")
+    datamodule_time = time.time()
+    print(f"Datamodule is prepared ({datamodule_time - start_time:.2f} seconds)")
 
-    SRC_PAD_IDX = datamodule.SRC.vocab.stoi[datamodule.SRC.pad_token]
-    TRG_PAD_IDX = datamodule.TRG.vocab.stoi[datamodule.TRG.pad_token]
-    INPUT_DIM = len(datamodule.SRC.vocab)
-    OUTPUT_DIM = len(datamodule.TRG.vocab)
-    HID_DIM = 256
-    ENC_LAYERS = 3
-    DEC_LAYERS = 3
-    ENC_HEADS = 8
-    DEC_HEADS = 8
-    ENC_PF_DIM = 512
-    DEC_PF_DIM = 512
-    ENC_DROPOUT = 0.1
-    DEC_DROPOUT = 0.1
-
-    encoder = TransformerEncoder(
-        INPUT_DIM,
-        HID_DIM,
-        ENC_LAYERS,
-        ENC_HEADS,
-        ENC_PF_DIM,
-        args['encoder_dropout_p'], 
-        args['device'],
-    ).to(args['device'])
-
-    decoder = TransformerDecoder(
-        OUTPUT_DIM,
-        HID_DIM,
-        DEC_LAYERS,
-        DEC_HEADS,
-        DEC_PF_DIM,
-        args['decoder_dropout_p'],
-        args['device'],
-    ).to(args['device'])
+    args['src_pad_idx'] = datamodule.SRC.vocab.stoi[datamodule.SRC.pad_token]
+    args['trg_pad_idx'] = datamodule.TRG.vocab.stoi[datamodule.TRG.pad_token]
+    args['input_dim'] = len(datamodule.SRC.vocab)
+    args['output_dim'] = len(datamodule.TRG.vocab)
 
     translator = TransformerTranslator(
-        encoder=encoder,
-        decoder=decoder,
-        source_pad_idx=SRC_PAD_IDX,
-        target_pad_idx=TRG_PAD_IDX,
-        learning_rate=3e-4,
+        src_pad_idx=args['src_pad_idx'],
+        trg_pad_idx=args['trg_pad_idx'],
+        learning_rate=args['learning_rate'],
+        input_dim=args['input_dim'],
+        output_dim=args['output_dim'],
+        hidden_dim=args['hidden_dim'],
+        encoder_dropout_p=args['encoder_dropout_p'],
+        encoder_heads_num=args['encoder_heads_num'],
+        encoder_layers_num=args['encoder_layers_num'],
+        encoder_pf_dim=args['encoder_pf_dim'],
+        decoder_dropout_p=args['decoder_dropout_p'],
+        decoder_heads_num=args['decoder_heads_num'],
+        decoder_layers_num=args['decoder_layers_num'],
+        decoder_pf_dim=args['decoder_pf_dim'],
         device=args['device'],
     ).to(args['device'])
 
@@ -90,73 +109,16 @@ def main(args):
         datamodule=datamodule,
     )
 
-    checkpoint = torch.load(f'models/v{args["version"]}-e{args["max_epoch"] - 1}.hdf5', map_location=args['device'])
-
-    model = TransformerTranslator(
-        encoder=encoder,
-        decoder=decoder,
-        source_pad_idx=SRC_PAD_IDX,
-        target_pad_idx=TRG_PAD_IDX,
-        learning_rate=3e-4,
-        device=args['device'],
-    ).to(args['device'])
-    model.load_state_dict(checkpoint['model_state_dict'])
-    model.to(args['device'])
-    print(model.device)
-
-    def tags2tokens(tags, vocab):
-        result = list()
-
-        for tag in tags:
-            token = vocab[tag]
-            if token == '<eos>' or token == '<pad>':
-                break
-            result.append(token)
-
-        return ' '.join(result)
+    checkpoint = torch.load(f'models/v{args["version"]}-e{args["max_epoch"]}.hdf5', map_location=args['device'])
+    #checkpoint = torch.load(f'models/v{args["version"]}-e1.hdf5', map_location=args['device'])
+    translator.load_state_dict(checkpoint['model_state_dict'])
 
     f = open('test1.de-en.en', 'w')
 
-    def translate_sentence(sentence, src_field, trg_field, model, device, max_len=50):
-        model.eval()
-
-        if isinstance(sentence, str):
-            nlp = spacy.load('de')
-            tokens = [token.text.lower() for token in nlp(sentence)]
-        else:
-            tokens = [token.lower() for token in sentence]
-
-        tokens = [src_field.init_token] + tokens + [src_field.eos_token]
-        src_indexes = [src_field.vocab.stoi[token] for token in tokens]
-        src_tensor = torch.LongTensor(src_indexes).unsqueeze(0).to(device)
-        src_mask = model.make_source_mask(src_tensor)
-
-        with torch.no_grad():
-            enc_src = model.encoder(src_tensor, src_mask)
-
-        trg_indexes = [trg_field.vocab.stoi[trg_field.init_token]]
-
-        for i in range(max_len):
-            trg_tensor = torch.LongTensor(trg_indexes).unsqueeze(0).to(device)
-            trg_mask = model.make_target_mask(trg_tensor)
-
-            with torch.no_grad():
-                output, attention = model.decoder(trg_tensor, enc_src, trg_mask, src_mask)
-
-            pred_token = output.argmax(2)[:,-1].item()
-            trg_indexes.append(pred_token)
-
-            if pred_token == trg_field.vocab.stoi[trg_field.eos_token]:
-                break
-
-        trg_tokens = [trg_field.vocab.itos[i] for i in trg_indexes]
-
-        return trg_tokens[1:], attention
-
     for i in range(2998):
-        src = vars(datamodule.train_dataset.examples[i])['src']
+        src = vars(datamodule.test_dataset.examples[i])['src']
 
-        translation, attention = translate_sentence(src, datamodule.SRC, datamodule.TRG, model, args['device'])
+        translation, attention = translate_sentence(src, datamodule.SRC, datamodule.TRG, translator, args['device'])
         translation.pop()
 
         print(' '.join(translation), file=f)
@@ -171,16 +133,23 @@ if __name__ == "__main__":
         batch_size=64,
         data_path=Path('homework_machine_translation_de-en'),
         decoder_dropout_p=0.1,
+        decoder_heads_num=8,
         decoder_hidden_dim=128,
-        decoder_embedding_dim=128,
+        decoder_layers_num=3,
+        decoder_pf_dim=512,
         device=torch.device('cuda:0' if torch.cuda.is_available() else 'cpu'),
         encoder_dropout_p=0.1,
+        encoder_heads_num=8,
         encoder_hidden_dim=128,
-        encoder_embedding_dim=128,
-        max_epoch=10,
+        encoder_layers_num=3,
+        encoder_pf_dim=512,
+        hidden_dim=256,
+        learning_rate=3e-4,
+        max_epoch=15,
         num_workers=4,
         verbose=True,
-        version='1.0',
+        version='1.1',
     )
+
     main(args)
 

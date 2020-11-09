@@ -17,77 +17,109 @@ from torch.nn import (
 from torch.optim import Adam
 from torch.optim.optimizer import Optimizer
 
+from .transformer_blocks import (
+    TransformerDecoder,
+    TransformerEncoder,
+)
+
 
 class TransformerTranslator(Module):
     def __init__(
             self,
-            encoder: Module,
-            decoder: Module,
-            source_pad_idx, #TODO
-            target_pad_idx, #TODO
+            src_pad_idx, #TODO
+            trg_pad_idx, #TODO
             learning_rate: float,
+            input_dim: int,
+            output_dim: int,
+            hidden_dim: int,
+            encoder_dropout_p: float,
+            encoder_heads_num: int,
+            encoder_layers_num: int,
+            encoder_pf_dim: int,
+            decoder_dropout_p: float,
+            decoder_heads_num: int,
+            decoder_layers_num: int,
+            decoder_pf_dim: int,
             device: torch.device,
         ):
         super().__init__()
 
         self.device = device
         self.learning_rate = learning_rate
-        self.criterion = CrossEntropyLoss(ignore_index=target_pad_idx)
+        self.criterion = CrossEntropyLoss(ignore_index=trg_pad_idx)
 
-        self.encoder = encoder
-        self.decoder = decoder
-        self.source_pad_idx = source_pad_idx
-        self.target_pad_idx = target_pad_idx
+        self.encoder = TransformerEncoder(#TODO
+            input_dim=input_dim,
+            hidden_dim=hidden_dim,
+            layers_num=encoder_layers_num,
+            heads_num=encoder_heads_num,
+            pf_dim=encoder_pf_dim,
+            dropout_p=encoder_dropout_p,
+            device=device,
+        )
 
-    def make_source_mask(
+        self.decoder = TransformerDecoder( #TODO
+            output_dim=output_dim,
+            hidden_dim=hidden_dim,
+            layers_num=decoder_layers_num,
+            heads_num=decoder_heads_num,
+            pf_dim=decoder_pf_dim,
+            dropout_p=decoder_dropout_p,
+            device=device,
+        )
+
+        self.src_pad_idx = src_pad_idx
+        self.trg_pad_idx = trg_pad_idx
+
+    def make_src_mask(
             self,
-            source: Tensor,
+            src: Tensor,
         ):
-        source_mask = (
-            source != self.source_pad_idx
+        src_mask = (
+            src != self.src_pad_idx
         ).unsqueeze(1).unsqueeze(2)
 
-        return source_mask
+        return src_mask
 
-    def make_target_mask(
+    def make_trg_mask(
             self,
-            target: Tensor,
+            trg: Tensor,
         ):
-        target_pad_mask = (
-            target != self.target_pad_idx
+        trg_pad_mask = (
+            trg != self.trg_pad_idx
         ).unsqueeze(1).unsqueeze(2).to(self.device)
 
-        target_len = target.shape[1]
+        trg_len = trg.shape[1]
 
-        target_sub_mask = torch.tril(
+        trg_sub_mask = torch.tril(
             input=torch.ones(
-                size=(target_len, target_len),
+                size=(trg_len, trg_len),
                 device=self.device,
             ),
         ).bool()
 
-        target_mask = target_pad_mask & target_sub_mask
+        trg_mask = trg_pad_mask & trg_sub_mask
 
-        return target_mask
+        return trg_mask
 
     def forward(
             self,
-            source: Tensor,
-            target: Tensor,
+            src: Tensor,
+            trg: Tensor,
         ):
-        source_mask = self.make_source_mask(source=source)
-        target_mask = self.make_target_mask(target=target)
+        src_mask = self.make_src_mask(src=src)
+        trg_mask = self.make_trg_mask(trg=trg)
 
-        enc_source = self.encoder(
-            source,
-            source_mask,
+        enc_src = self.encoder(
+            src,
+            src_mask,
         )
 
         output, attention = self.decoder(
-            target,
-            enc_source,
-            target_mask,
-            source_mask,
+            trg,
+            enc_src,
+            trg_mask,
+            src_mask,
         )
 
         return output, attention
@@ -101,8 +133,8 @@ class TransformerTranslator(Module):
         en_tags = batch.trg.permute(1, 0).to(self.device)
 
         pred_en_tags, _ = self(
-            source=de_tags,
-            target=en_tags[:, :-1],
+            src=de_tags,
+            trg=en_tags[:, :-1],
         )
         output_dim = pred_en_tags.shape[-1]
 
@@ -132,8 +164,8 @@ class TransformerTranslator(Module):
         en_tags = batch.trg.permute(1, 0).to(self.device)
 
         pred_en_tags, _ = self(
-            source=de_tags,
-            target=en_tags[:, :-1],
+            src=de_tags,
+            trg=en_tags[:, :-1],
         )
         output_dim = pred_en_tags.shape[-1]
 
@@ -163,8 +195,8 @@ class TransformerTranslator(Module):
         en_tags = batch.trg.permute(1, 0).to(self.device)
 
         pred_en_tags, _ = self(
-            source=de_tags,
-            target=en_tags,
+            src=de_tags,
+            trg=en_tags,
         )
         output_dim = pred_en_tags.shape[-1]
 
