@@ -110,7 +110,7 @@ def main(args):
     )
 
     checkpoint = torch.load(f'models/v{args["version"]}-e{args["max_epoch"]}.hdf5', map_location=args['device'])
-    #checkpoint = torch.load(f'models/v{args["version"]}-e1.hdf5', map_location=args['device'])
+    #checkpoint = torch.load(f'models/v{args["version"]}-e19.hdf5', map_location=args['device'])
     translator.load_state_dict(checkpoint['model_state_dict'])
 
     f = open('test1.de-en.en', 'w')
@@ -130,25 +130,25 @@ if __name__ == "__main__":
     parser = ArgumentParser()
     args = parser.parse_args()
     args = dict(
-        batch_size=64,
+        batch_size=8,
         data_path=Path('homework_machine_translation_de-en'),
-        decoder_dropout_p=0.15,
-        decoder_heads_num=16,
-        decoder_hidden_dim=512,
-        decoder_layers_num=8,
+        decoder_dropout_p=0.2,
+        decoder_heads_num=32,
+        decoder_hidden_dim=1024,
+        decoder_layers_num=16,
         decoder_pf_dim=1024,
         device=torch.device('cuda:1' if torch.cuda.is_available() else 'cpu'),
-        encoder_dropout_p=0.15,
-        encoder_heads_num=16,
-        encoder_hidden_dim=512,
-        encoder_layers_num=8,
+        encoder_dropout_p=0.2,
+        encoder_heads_num=32,
+        encoder_hidden_dim=1024,
+        encoder_layers_num=16,
         encoder_pf_dim=1024,
-        hidden_dim=256,
-        learning_rate=3e-4,
-        max_epoch=20,
+        hidden_dim=1024,
+        learning_rate=1e-4,
+        max_epoch=40,
         num_workers=4,
         verbose=True,
-        version='1.2',
+        version='1.4',
     )
 
     main(args)

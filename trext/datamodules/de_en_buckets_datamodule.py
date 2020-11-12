@@ -1,6 +1,7 @@
 from pathlib import Path
 from typing import List, Tuple
 
+import torch
 from torchtext.data import BucketIterator, Field
 from torchtext.datasets import TranslationDataset
 
@@ -11,19 +12,24 @@ class DeEnBucketsDataModule:
             data_path: Path,
             batch_size: int,
             num_workers: int,
+            device: torch.device,
         ):
+        self.device = device
+
         self.data_path = data_path
         self.batch_size = batch_size
         self.num_workers = num_workers
 
     def prepare_data(self):
-        self.SRC = Field(tokenize=lambda x: x.split(),
+        self.SRC = Field(
+            tokenize=lambda x: x.split(),
             tokenizer_language="de",
             init_token='<sos>',
             eos_token='<eos>',
             lower=True,
         )
-        self.TRG = Field(tokenize=lambda x: x.split(),
+        self.TRG = Field(
+            tokenize=lambda x: x.split(),
             tokenizer_language="en",
             init_token='<sos>',
             eos_token='<eos>',
@@ -33,18 +39,18 @@ class DeEnBucketsDataModule:
     def setup(self):
         self.prepare_data()
         self.train_dataset = TranslationDataset(
-            str(self.data_path / 'train.de-en.'),
-            ['de', 'en'],
+            path=str(self.data_path / 'train.de-en.'),
+            exts=['de', 'en'],
             fields=(self.SRC, self.TRG),
         )
         self.val_dataset = TranslationDataset(
-            str(self.data_path / 'val.de-en.'),
-            ['de', 'en'],
+            path=str(self.data_path / 'val.de-en.'),
+            exts=['de', 'en'],
             fields=(self.SRC, self.TRG),
         )
         self.test_dataset = TranslationDataset(
-            str(self.data_path / 'test1.de-en.'),
-            ['de', 'de'],
+            path=str(self.data_path / 'test1.de-en.'),
+            exts=['de', 'de'],
             fields=(self.SRC, self.SRC),
         )
 
@@ -59,27 +65,28 @@ class DeEnBucketsDataModule:
 
     def train_dataloader(self):
         train_iterator = BucketIterator(
-            self.train_dataset,
+            dataset=self.train_dataset,
             batch_size=self.batch_size,
-            sort_key=lambda x: len(x.comment_text),
+            device=self.device,
         )
 
         return train_iterator
 
     def val_dataloader(self):
         val_iterator = BucketIterator(
-            self.val_dataset,
+            dataset=self.val_dataset,
             batch_size=self.batch_size,
-            sort_key=lambda x: len(x.comment_text),
+            device=self.device,
         )
 
         return val_iterator
 
     def test_dataloader(self):
         test_iterator = BucketIterator(
-            self.test_dataset,
+            dataset=self.test_dataset,
             batch_size=self.batch_size,
-            sort_key=lambda x: len(x.comment_text),
+            shuffle=False,
+            device=self.device,
         )
 
         return test_iterator
