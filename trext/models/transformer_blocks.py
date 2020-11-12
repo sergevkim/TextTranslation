@@ -37,7 +37,10 @@ class PositionwiseFeedforwardLayer(Module):
             )
         )
 
-    def forward(self, x):
+    def forward(
+            self,
+            x: Tensor,
+        ) -> Tensor:
         x_1 = self.sequential(x)
 
         return x_1
@@ -71,11 +74,11 @@ class MultiHeadAttentionLayer(Module):
 
     def forward(
             self,
-            query,
-            key,
-            value,
-            mask=None,
-        ):
+            query: Tensor,
+            key: Tensor,
+            value: Tensor,
+            mask: Tensor=None,
+        ) -> Tensor:
         batch_size = query.shape[0]
 
         Q = self.fc_q(query)
@@ -129,9 +132,9 @@ class EncoderLayer(Module):
 
     def forward(
             self,
-            src,
-            src_mask,
-        ):
+            src: Tensor,
+            src_mask: Tensor,
+        ) -> Tensor:
         _src, _ = self.self_attention(
             query=src,
             key=src,
@@ -188,9 +191,9 @@ class TransformerEncoder(Module):
 
     def forward(
             self,
-            src,
-            src_mask,
-        ):
+            src: Tensor,
+            src_mask: Tensor,
+        ) -> Tensor:
         batch_size = src.shape[0]
         src_len = src.shape[1]
 
@@ -250,10 +253,10 @@ class DecoderLayer(Module):
 
     def forward(
             self,
-            trg,
-            enc_src,
-            trg_mask,
-            src_mask,
+            trg: Tensor,
+            enc_src: Tensor,
+            trg_mask: Tensor,
+            src_mask: Tensor,
         ):
         _trg, _ = self.self_attention(
             query=trg,
@@ -324,8 +327,13 @@ class TransformerDecoder(Module):
 
         self.scale = torch.sqrt(torch.FloatTensor([hidden_dim])).to(device)
 
-    def forward(self, trg, enc_src, trg_mask, src_mask):
-
+    def forward(
+            self,
+            trg: Tensor,
+            enc_src: Tensor,
+            trg_mask: Tensor,
+            src_mask: Tensor,
+        ) -> Tuple[Tensor, Tensor]:
         batch_size = trg.shape[0]
         trg_len = trg.shape[1]
 

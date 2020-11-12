@@ -48,7 +48,7 @@ class TransformerTranslator(Module):
         self.learning_rate = learning_rate
         self.criterion = CrossEntropyLoss(ignore_index=trg_pad_idx)
 
-        self.encoder = TransformerEncoder(#TODO
+        self.encoder = TransformerEncoder(
             input_dim=input_dim,
             hidden_dim=hidden_dim,
             layers_num=encoder_layers_num,
@@ -58,7 +58,7 @@ class TransformerTranslator(Module):
             device=device,
         )
 
-        self.decoder = TransformerDecoder( #TODO
+        self.decoder = TransformerDecoder(
             output_dim=output_dim,
             hidden_dim=hidden_dim,
             layers_num=decoder_layers_num,
@@ -74,7 +74,7 @@ class TransformerTranslator(Module):
     def make_src_mask(
             self,
             src: Tensor,
-        ):
+        ) -> Tensor:
         src_mask = (
             src != self.src_pad_idx
         ).unsqueeze(1).unsqueeze(2)
@@ -84,7 +84,7 @@ class TransformerTranslator(Module):
     def make_trg_mask(
             self,
             trg: Tensor,
-        ):
+        ) -> Tensor:
         trg_pad_mask = (
             trg != self.trg_pad_idx
         ).unsqueeze(1).unsqueeze(2).to(self.device)
@@ -106,20 +106,20 @@ class TransformerTranslator(Module):
             self,
             src: Tensor,
             trg: Tensor,
-        ):
+        ) -> Tuple[Tensor, Tensor]:
         src_mask = self.make_src_mask(src=src)
         trg_mask = self.make_trg_mask(trg=trg)
 
         enc_src = self.encoder(
-            src,
-            src_mask,
+            src=src,
+            src_mask=src_mask,
         )
 
         output, attention = self.decoder(
-            trg,
-            enc_src,
-            trg_mask,
-            src_mask,
+            trg=trg,
+            enc_src=enc_src,
+            trg_mask=trg_mask,
+            src_mask=src_mask,
         )
 
         return output, attention
@@ -128,7 +128,7 @@ class TransformerTranslator(Module):
             self,
             batch: Tensor,
             batch_idx: int,
-        ):
+        ) -> Tensor:
         de_tags = batch.src.permute(1, 0).to(self.device)
         en_tags = batch.trg.permute(1, 0).to(self.device)
 
