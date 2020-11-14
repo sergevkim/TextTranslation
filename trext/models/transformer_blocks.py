@@ -63,7 +63,6 @@ class MultiHeadAttentionLayer(Module):
         self.hidden_dim = hidden_dim
         self.heads_num = heads_num
         self.head_dim = hidden_dim // heads_num
-
         self.fc_q = Linear(hidden_dim, hidden_dim)
         self.fc_k = Linear(hidden_dim, hidden_dim)
         self.fc_v = Linear(hidden_dim, hidden_dim)
@@ -90,7 +89,6 @@ class MultiHeadAttentionLayer(Module):
         Q = Q.view(batch_size, -1, self.heads_num, self.head_dim).permute(0, 2, 1, 3)
         K = K.view(batch_size, -1, self.heads_num, self.head_dim).permute(0, 2, 1, 3)
         V = V.view(batch_size, -1, self.heads_num, self.head_dim).permute(0, 2, 1, 3)
-
         K_2 = K.permute(0, 1, 3, 2)
 
         energy = torch.matmul(Q, K_2) / self.scale
@@ -118,7 +116,6 @@ class EncoderLayer(Module):
             device: torch.device,
         ):
         super().__init__()
-
         self.layer_norm_1 = LayerNorm(normalized_shape=hidden_dim)
         self.layer_norm_2 = LayerNorm(hidden_dim)
         self.self_attention = MultiHeadAttentionLayer(
@@ -232,7 +229,6 @@ class DecoderLayer(Module):
             device: torch.device,
         ):
         super().__init__()
-
         self.layer_norm_1 = LayerNorm(normalized_shape=hidden_dim)
         self.layer_norm_2 = LayerNorm(normalized_shape=hidden_dim)
         self.layer_norm_3 = LayerNorm(normalized_shape=hidden_dim)

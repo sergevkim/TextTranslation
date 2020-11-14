@@ -47,7 +47,6 @@ class TransformerTranslator(Module):
         self.device = device
         self.learning_rate = learning_rate
         self.criterion = CrossEntropyLoss(ignore_index=trg_pad_idx)
-
         self.encoder = TransformerEncoder(
             input_dim=input_dim,
             hidden_dim=hidden_dim,
@@ -57,7 +56,6 @@ class TransformerTranslator(Module):
             dropout_p=encoder_dropout_p,
             device=device,
         )
-
         self.decoder = TransformerDecoder(
             output_dim=output_dim,
             hidden_dim=hidden_dim,

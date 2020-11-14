@@ -113,7 +113,9 @@ def main(args):
     )
 
     checkpoint = torch.load(f'models/v{args["version"]}-e{args["max_epoch"]}.hdf5', map_location=args['device'])
-    #checkpoint = torch.load(f'models/v{args["version"]}-e19.hdf5', map_location=args['device'])
+
+    #checkpoint = torch.load(f'models/v{args["version"]}-e1.hdf5', map_location=args['device'])
+
     translator.load_state_dict(checkpoint['model_state_dict'])
 
     f = open('test1.de-en.en', 'w')
