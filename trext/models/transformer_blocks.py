@@ -11,6 +11,8 @@ from torch.nn import (
     LayerNorm,
     Linear,
     Module,
+    ModuleList,
+    ReLU,
     Sequential,
 )
 
@@ -66,11 +68,11 @@ class MultiHeadAttentionLayer(Module):
         self.fc_k = Linear(hidden_dim, hidden_dim)
         self.fc_v = Linear(hidden_dim, hidden_dim)
 
-        self.fc_o = Linear(hidden_dim, hidden_dim)
+        self.fc_out = Linear(hidden_dim, hidden_dim)
 
         self.dropout = Dropout(p=dropout_p)
 
-        self.scale = torch.sqrt(torch.FloatTensor([self.head_dim])).to(device)
+        self.scale = torch.sqrt(torch.FloatTensor([self.head_dim])).to(device) #dk
 
     def forward(
             self,
@@ -89,7 +91,9 @@ class MultiHeadAttentionLayer(Module):
         K = K.view(batch_size, -1, self.heads_num, self.head_dim).permute(0, 2, 1, 3)
         V = V.view(batch_size, -1, self.heads_num, self.head_dim).permute(0, 2, 1, 3)
 
-        energy = torch.matmul(Q, K.permute(0, 1, 3, 2)) / self.scale
+        K_2 = K.permute(0, 1, 3, 2)
+
+        energy = torch.matmul(Q, K_2) / self.scale
 
         if mask is not None:
             energy = energy.masked_fill(mask == 0, -1e10)
@@ -99,7 +103,7 @@ class MultiHeadAttentionLayer(Module):
         x = torch.matmul(self.dropout(attention), V)
         x = x.permute(0, 2, 1, 3).contiguous()
         x = x.view(batch_size, -1, self.hidden_dim)
-        x = self.fc_o(x)
+        x = self.fc_out(x)
 
         return x, attention
 
@@ -115,8 +119,8 @@ class EncoderLayer(Module):
         ):
         super().__init__()
 
-        self.self_attn_layer_norm = LayerNorm(normalized_shape=hidden_dim)
-        self.ff_layer_norm = LayerNorm(hidden_dim)
+        self.layer_norm_1 = LayerNorm(normalized_shape=hidden_dim)
+        self.layer_norm_2 = LayerNorm(hidden_dim)
         self.self_attention = MultiHeadAttentionLayer(
             hidden_dim=hidden_dim,
             heads_num=heads_num,
@@ -124,10 +128,10 @@ class EncoderLayer(Module):
             device=device,
         )
         self.positionwise_feedforward = PositionwiseFeedforwardLayer(
-            hidden_dim=hidden_dim,
-            pf_dim=pf_dim,
-            dropout_p=dropout_p,
-        )
+                hidden_dim=hidden_dim,
+                pf_dim=pf_dim,
+                dropout_p=dropout_p,
+            )
         self.dropout = Dropout(p=dropout_p)
 
     def forward(
@@ -135,20 +139,20 @@ class EncoderLayer(Module):
             src: Tensor,
             src_mask: Tensor,
         ) -> Tensor:
-        _src, _ = self.self_attention(
+        src_2, _ = self.self_attention(
             query=src,
             key=src,
             value=src,
             mask=src_mask,
         )
+        src_2 = self.dropout(src_2)
+        mid = self.layer_norm_1(src + src_2)
 
-        src = self.self_attn_layer_norm(src + self.dropout(_src))
+        mid_2 = self.positionwise_feedforward(mid)
+        mid_2 = self.dropout(mid_2)
+        out = self.layer_norm_2(mid + mid_2)
 
-        _src = self.positionwise_feedforward(src)
-
-        src = self.ff_layer_norm(src + self.dropout(_src))
-
-        return src
+        return out
 
 
 class TransformerEncoder(Module):
@@ -229,9 +233,9 @@ class DecoderLayer(Module):
         ):
         super().__init__()
 
-        self.self_attn_layer_norm = LayerNorm(normalized_shape=hidden_dim)
-        self.enc_attn_layer_norm = LayerNorm(normalized_shape=hidden_dim)
-        self.ff_layer_norm = LayerNorm(normalized_shape=hidden_dim)
+        self.layer_norm_1 = LayerNorm(normalized_shape=hidden_dim)
+        self.layer_norm_2 = LayerNorm(normalized_shape=hidden_dim)
+        self.layer_norm_3 = LayerNorm(normalized_shape=hidden_dim)
         self.self_attention = MultiHeadAttentionLayer(
             hidden_dim=hidden_dim,
             heads_num=heads_num,
@@ -258,29 +262,32 @@ class DecoderLayer(Module):
             trg_mask: Tensor,
             src_mask: Tensor,
         ):
-        _trg, _ = self.self_attention(
+        trg_2, _ = self.self_attention(
             query=trg,
             key=trg,
             value=trg,
             mask=trg_mask,
         )
+        trg_2 = self.dropout(trg_2)
 
-        trg = self.self_attn_layer_norm(trg + self.dropout(_trg))
+        mid_1_1 = self.layer_norm_1(trg + trg_2)
 
-        _trg, attention = self.encoder_attention(
-            query=trg,
+        mid_1_2, attention = self.encoder_attention(
+            query=mid_1_1,
             key=enc_src,
             value=enc_src,
             mask=src_mask,
         )
+        mid_1_2 = self.dropout(mid_1_2)
 
-        trg = self.enc_attn_layer_norm(trg + self.dropout(_trg))
+        mid_2_1 = self.layer_norm_2(mid_1_1 + mid_1_2)
 
-        _trg = self.positionwise_feedforward(trg)
+        mid_2_2 = self.positionwise_feedforward(mid_2_1)
+        mid_2_2 = self.dropout(mid_2_2)
 
-        trg = self.ff_layer_norm(trg + self.dropout(_trg))
+        out = self.layer_norm_3(mid_2_1 + mid_2_2)
 
-        return trg, attention
+        return out, attention
 
 
 class TransformerDecoder(Module):
