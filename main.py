@@ -13,6 +13,8 @@ from trext.models import TransformerTranslator, TransformerEncoder, TransformerD
 from trext.trainer import Trainer
 from trext.utils import Editor, Vocabulary
 
+from config import ConfigDataClass
+
 
 def set_seed(seed=9):
     torch.backends.cudnn.deterministic = True
@@ -68,6 +70,7 @@ def main(args):
         data_path=args['data_path'],
         batch_size=args['batch_size'],
         num_workers=args['num_workers'],
+        device=args['device'],
     )
     datamodule.setup()
     datamodule_time = time.time()
@@ -88,11 +91,11 @@ def main(args):
         encoder_dropout_p=args['encoder_dropout_p'],
         encoder_heads_num=args['encoder_heads_num'],
         encoder_layers_num=args['encoder_layers_num'],
-        encoder_pf_dim=args['encoder_pf_dim'],
+        encoder_pf_dim=args['encoder_dff_dim'],
         decoder_dropout_p=args['decoder_dropout_p'],
         decoder_heads_num=args['decoder_heads_num'],
         decoder_layers_num=args['decoder_layers_num'],
-        decoder_pf_dim=args['decoder_pf_dim'],
+        decoder_pf_dim=args['decoder_dff_dim'],
         device=args['device'],
     ).to(args['device'])
 
@@ -110,7 +113,9 @@ def main(args):
     )
 
     checkpoint = torch.load(f'models/v{args["version"]}-e{args["max_epoch"]}.hdf5', map_location=args['device'])
+
     #checkpoint = torch.load(f'models/v{args["version"]}-e1.hdf5', map_location=args['device'])
+
     translator.load_state_dict(checkpoint['model_state_dict'])
 
     f = open('test1.de-en.en', 'w')
@@ -132,23 +137,23 @@ if __name__ == "__main__":
     args = dict(
         batch_size=64,
         data_path=Path('homework_machine_translation_de-en'),
-        decoder_dropout_p=0.1,
-        decoder_heads_num=8,
-        decoder_hidden_dim=128,
-        decoder_layers_num=3,
-        decoder_pf_dim=512,
-        device=torch.device('cuda:0' if torch.cuda.is_available() else 'cpu'),
-        encoder_dropout_p=0.1,
-        encoder_heads_num=8,
-        encoder_hidden_dim=128,
-        encoder_layers_num=3,
-        encoder_pf_dim=512,
-        hidden_dim=256,
-        learning_rate=3e-4,
-        max_epoch=15,
+        decoder_dropout_p=0.1,  #TODO
+        decoder_heads_num=8,  #TODO
+        decoder_hidden_dim=512,  #TODO
+        decoder_layers_num=6,  #TODO
+        decoder_dff_dim=2048,  #TODO
+        device=torch.device('cuda:1' if torch.cuda.is_available() else 'cpu'),
+        encoder_dropout_p=0.1,  #TODO
+        encoder_heads_num=8,  #TODO
+        encoder_hidden_dim=512,  #TODO
+        encoder_layers_num=6,  #TODO
+        encoder_dff_dim=2048,  #TODO
+        hidden_dim=512,
+        learning_rate=2e-4,
+        max_epoch=40,
         num_workers=4,
         verbose=True,
-        version='1.1',
+        version='1.5',
     )
 
     main(args)

@@ -102,7 +102,7 @@ class Trainer:
                 val_dataloader=val_dataloader,
                 epoch_idx=epoch_idx,
             )
-            if epoch_idx % 2 == 1:
+            if epoch_idx % 5 == 0:
                 self.save_checkpoint(
                     model=model,
                     optimizer=optimizer,
