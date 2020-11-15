@@ -41,24 +41,39 @@ def translate_sentence(sentence, src_field, trg_field, model, device, max_len=50
     with torch.no_grad():
         enc_src = model.encoder(src_tensor, src_mask)
 
-    trg_indexes = [trg_field.vocab.stoi[trg_field.init_token]]
+    tags = [trg_field.vocab.stoi[trg_field.init_token]]
+    unk_indices = list()
 
     for i in range(max_len):
-        trg_tensor = torch.LongTensor(trg_indexes).unsqueeze(0).to(device)
+        trg_tensor = torch.LongTensor(tags).unsqueeze(0).to(device)
         trg_mask = model.make_trg_mask(trg_tensor)
 
         with torch.no_grad():
             output, attention = model.decoder(trg_tensor, enc_src, trg_mask, src_mask)
 
         pred_token = output.argmax(2)[:,-1].item()
-        trg_indexes.append(pred_token)
+
+        if pred_token == trg_field.vocab.stoi[trg_field.unk_token]:
+            unk_indices.append(i)
+
+        tags.append(pred_token)
 
         if pred_token == trg_field.vocab.stoi[trg_field.eos_token]:
             break
 
-    trg_tokens = [trg_field.vocab.itos[i] for i in trg_indexes]
+    result_tokens = list()
+    tags = tags[1:]
 
-    return trg_tokens[1:], attention
+    for i, tag in enumerate(tags):
+        if i not in unk_indices:
+            result_tokens.append(trg_field.vocab.itos[tag])
+        else:
+            result_tokens.append(tokens[i])
+
+    #trg_tokens = [trg_field.vocab.itos[tag] for tag in tags]
+    #return trg_tokens[1:], attention
+
+    return result_tokens, attention
 
 
 def main(args):
@@ -99,22 +114,24 @@ def main(args):
         device=args['device'],
     ).to(args['device'])
 
-    trainer = Trainer(
-        logger=None,
-        max_epoch=args['max_epoch'],
-        verbose=args['verbose'],
-        version=args['version'],
-    )
+    if not args['inference_only']:
+        trainer = Trainer(
+            logger=None,
+            max_epoch=args['max_epoch'],
+            verbose=args['verbose'],
+            version=args['version'],
+        )
 
-    print('Let\'s start training!')
-    trainer.fit(
-        model=translator,
-        datamodule=datamodule,
-    )
+        print('Let\'s start training!')
+        trainer.fit(
+            model=translator,
+            datamodule=datamodule,
+        )
 
-    checkpoint = torch.load(f'models/v{args["version"]}-e{args["max_epoch"]}.hdf5', map_location=args['device'])
+        checkpoint = torch.load(f'models/v{args["version"]}-e{args["max_epoch"]}.hdf5', map_location=args['device'])
 
-    #checkpoint = torch.load(f'models/v{args["version"]}-e1.hdf5', map_location=args['device'])
+    else:
+        checkpoint = torch.load(f'models/v{args["version"]}-e15.hdf5', map_location=args['device'])
 
     translator.load_state_dict(checkpoint['model_state_dict'])
 
@@ -154,6 +171,7 @@ if __name__ == "__main__":
         num_workers=4,
         verbose=True,
         version='1.5',
+        inference_only=True,
     )
 
     main(args)
