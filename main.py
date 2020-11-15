@@ -68,7 +68,10 @@ def translate_sentence(sentence, src_field, trg_field, model, device, max_len=50
         if i not in unk_indices:
             result_tokens.append(trg_field.vocab.itos[tag])
         else:
-            result_tokens.append(tokens[i])
+            if i < len(tokens):
+                result_tokens.append(tokens[i])
+            else:
+                result_tokens.append(tokens[-1])
 
     #trg_tokens = [trg_field.vocab.itos[tag] for tag in tags]
     #return trg_tokens[1:], attention
@@ -144,34 +147,33 @@ def main(args):
         translation.pop()
 
         print(' '.join(translation), file=f)
-        if i % 10 == 0:
-            print(i, ' '.join(translation))
+        print(i, ' '.join(translation))
 
 
 if __name__ == "__main__":
     parser = ArgumentParser()
     args = parser.parse_args()
     args = dict(
-        batch_size=64,
+        batch_size=32,
         data_path=Path('homework_machine_translation_de-en'),
-        decoder_dropout_p=0.1,  #TODO
-        decoder_heads_num=8,  #TODO
-        decoder_hidden_dim=512,  #TODO
+        decoder_dropout_p=0.2,  #TODO
+        decoder_heads_num=16,  #TODO
+        decoder_hidden_dim=1024,  #TODO
         decoder_layers_num=6,  #TODO
-        decoder_dff_dim=2048,  #TODO
+        decoder_dff_dim=409,  #TODO
         device=torch.device('cuda:1' if torch.cuda.is_available() else 'cpu'),
-        encoder_dropout_p=0.1,  #TODO
-        encoder_heads_num=8,  #TODO
-        encoder_hidden_dim=512,  #TODO
+        encoder_dropout_p=0.2,  #TODO
+        encoder_heads_num=16,  #TODO
+        encoder_hidden_dim=1024,  #TODO
         encoder_layers_num=6,  #TODO
-        encoder_dff_dim=2048,  #TODO
-        hidden_dim=512,
-        learning_rate=2e-4,
-        max_epoch=40,
+        encoder_dff_dim=4096,  #TODO
+        hidden_dim=1024,
+        learning_rate=3e-4,
+        max_epoch=30,
         num_workers=4,
         verbose=True,
-        version='1.5',
-        inference_only=True,
+        version='1.6',
+        inference_only=False,
     )
 
     main(args)

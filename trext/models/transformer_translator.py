@@ -15,6 +15,7 @@ from torch.nn import (
     CrossEntropyLoss,
 )
 from torch.optim import Adam
+from torch.optim.lr_scheduler import _LRScheduler, ReduceLROnPlateau
 from torch.optim.optimizer import Optimizer
 
 from .transformer_blocks import (
@@ -209,10 +210,24 @@ class TransformerTranslator(Module):
         pass
 
     def configure_optimizers(self) -> Optimizer:
-        optimizer = Adam(
+        self.optimizer = Adam(
             params=self.parameters(),
             lr=self.learning_rate,
+            betas=(0.9, 0.98),
+            eps=1e-9,
         )
 
-        return optimizer
+        return self.optimizer
+
+    def configure_schedulers(self) -> _LRScheduler:
+        self.scheduler = ReduceLROnPlateau(
+            optimizer=self.optimizer,
+            mode='min',
+            factor=0.8,
+            patience=3,
+            min_lr=1e-5,
+            verbose=True,
+        )
+
+        return self.scheduler
 
