@@ -41,24 +41,42 @@ def translate_sentence(sentence, src_field, trg_field, model, device, max_len=50
     with torch.no_grad():
         enc_src = model.encoder(src_tensor, src_mask)
 
-    trg_indexes = [trg_field.vocab.stoi[trg_field.init_token]]
+    tags = [trg_field.vocab.stoi[trg_field.init_token]]
+    unk_indices = list()
 
     for i in range(max_len):
-        trg_tensor = torch.LongTensor(trg_indexes).unsqueeze(0).to(device)
+        trg_tensor = torch.LongTensor(tags).unsqueeze(0).to(device)
         trg_mask = model.make_trg_mask(trg_tensor)
 
         with torch.no_grad():
             output, attention = model.decoder(trg_tensor, enc_src, trg_mask, src_mask)
 
         pred_token = output.argmax(2)[:,-1].item()
-        trg_indexes.append(pred_token)
+
+        if pred_token == trg_field.vocab.stoi[trg_field.unk_token]:
+            unk_indices.append(i)
+
+        tags.append(pred_token)
 
         if pred_token == trg_field.vocab.stoi[trg_field.eos_token]:
             break
 
-    trg_tokens = [trg_field.vocab.itos[i] for i in trg_indexes]
+    result_tokens = list()
+    tags = tags[1:]
 
-    return trg_tokens[1:], attention
+    for i, tag in enumerate(tags):
+        if i not in unk_indices:
+            result_tokens.append(trg_field.vocab.itos[tag])
+        else:
+            if i < len(tokens):
+                result_tokens.append(tokens[i])
+            else:
+                result_tokens.append(tokens[-1])
+
+    #trg_tokens = [trg_field.vocab.itos[tag] for tag in tags]
+    #return trg_tokens[1:], attention
+
+    return result_tokens, attention
 
 
 def main(args):
@@ -99,22 +117,24 @@ def main(args):
         device=args['device'],
     ).to(args['device'])
 
-    trainer = Trainer(
-        logger=None,
-        max_epoch=args['max_epoch'],
-        verbose=args['verbose'],
-        version=args['version'],
-    )
+    if not args['inference_only']:
+        trainer = Trainer(
+            logger=None,
+            max_epoch=args['max_epoch'],
+            verbose=args['verbose'],
+            version=args['version'],
+        )
 
-    print('Let\'s start training!')
-    trainer.fit(
-        model=translator,
-        datamodule=datamodule,
-    )
+        print('Let\'s start training!')
+        trainer.fit(
+            model=translator,
+            datamodule=datamodule,
+        )
 
-    checkpoint = torch.load(f'models/v{args["version"]}-e{args["max_epoch"]}.hdf5', map_location=args['device'])
+        checkpoint = torch.load(f'models/v{args["version"]}-e{args["max_epoch"]}.hdf5', map_location=args['device'])
 
-    #checkpoint = torch.load(f'models/v{args["version"]}-e1.hdf5', map_location=args['device'])
+    else:
+        checkpoint = torch.load(f'models/v{args["version"]}-e15.hdf5', map_location=args['device'])
 
     translator.load_state_dict(checkpoint['model_state_dict'])
 
@@ -127,33 +147,33 @@ def main(args):
         translation.pop()
 
         print(' '.join(translation), file=f)
-        if i % 10 == 0:
-            print(i, ' '.join(translation))
+        print(i, ' '.join(translation))
 
 
 if __name__ == "__main__":
     parser = ArgumentParser()
     args = parser.parse_args()
     args = dict(
-        batch_size=64,
+        batch_size=32,
         data_path=Path('homework_machine_translation_de-en'),
-        decoder_dropout_p=0.1,  #TODO
-        decoder_heads_num=8,  #TODO
-        decoder_hidden_dim=512,  #TODO
+        decoder_dropout_p=0.2,  #TODO
+        decoder_heads_num=16,  #TODO
+        decoder_hidden_dim=1024,  #TODO
         decoder_layers_num=6,  #TODO
-        decoder_dff_dim=2048,  #TODO
+        decoder_dff_dim=409,  #TODO
         device=torch.device('cuda:1' if torch.cuda.is_available() else 'cpu'),
-        encoder_dropout_p=0.1,  #TODO
-        encoder_heads_num=8,  #TODO
-        encoder_hidden_dim=512,  #TODO
+        encoder_dropout_p=0.2,  #TODO
+        encoder_heads_num=16,  #TODO
+        encoder_hidden_dim=1024,  #TODO
         encoder_layers_num=6,  #TODO
-        encoder_dff_dim=2048,  #TODO
-        hidden_dim=512,
-        learning_rate=2e-4,
-        max_epoch=40,
+        encoder_dff_dim=4096,  #TODO
+        hidden_dim=1024,
+        learning_rate=3e-4,
+        max_epoch=30,
         num_workers=4,
         verbose=True,
-        version='1.5',
+        version='1.6',
+        inference_only=False,
     )
 
     main(args)

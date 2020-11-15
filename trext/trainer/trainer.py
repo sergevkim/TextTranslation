@@ -1,6 +1,7 @@
 from pathlib import Path
 
 import torch
+import torch.nn as nn
 import torch.nn.utils as utils
 import tqdm
 from torch.nn import Module
@@ -84,6 +85,16 @@ class Trainer:
         train_dataloader = datamodule.train_dataloader()
         val_dataloader = datamodule.val_dataloader()
         optimizer = model.configure_optimizers()
+        scheduler = model.configure_schedulers()
+
+        def init_weights(m):
+            if hasattr(m, 'weight'):
+                if m.weight is None:
+                    pass
+                elif m.weight.dim() > 1:
+                    nn.init.xavier_uniform_(m.weight.data)
+
+        model.apply(init_weights)
 
         self.validation_epoch(
             model=model,
@@ -102,6 +113,8 @@ class Trainer:
                 val_dataloader=val_dataloader,
                 epoch_idx=epoch_idx,
             )
+            scheduler.step()
+
             if epoch_idx % 5 == 0:
                 self.save_checkpoint(
                     model=model,
