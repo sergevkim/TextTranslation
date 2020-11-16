@@ -5,6 +5,7 @@ import torch.nn as nn
 import torch.nn.utils as utils
 import tqdm
 from torch.nn import Module
+from torch.optim.lr_scheduler import _LRScheduler
 from torch.optim.optimizer import Optimizer
 from torch.utils.data import DataLoader
 
@@ -28,7 +29,7 @@ class Trainer:
             optimizer: Optimizer,
             epoch_idx: int,
             checkpoints_dir: Path,
-        ):
+        ) -> None:
         checkpoint = {
             'model': model,
             'optimizer': optimizer,
@@ -46,7 +47,7 @@ class Trainer:
             train_dataloader: DataLoader,
             optimizer: Optimizer,
             epoch_idx: int,
-        ):
+        ) -> None:
         model.train()
 
         for batch_idx, batch in enumerate(tqdm.tqdm(train_dataloader)):
@@ -64,8 +65,9 @@ class Trainer:
             self,
             model: Module,
             val_dataloader: DataLoader,
+            scheduler: _LRScheduler,
             epoch_idx: int,
-        ):
+        ) -> None:
         model.eval()
         loss_sum = 0
 
@@ -74,6 +76,8 @@ class Trainer:
             loss_sum += loss.item()
             model.validation_step_end()
 
+        scheduler.step(loss_sum)
+
         print(epoch_idx, loss_sum)
         model.validation_epoch_end(epoch_idx=epoch_idx)
 
@@ -81,11 +85,10 @@ class Trainer:
             self,
             model: Module,
             datamodule,
-        ):
+        ) -> None:
         train_dataloader = datamodule.train_dataloader()
         val_dataloader = datamodule.val_dataloader()
-        optimizer = model.configure_optimizers()
-        scheduler = model.configure_schedulers()
+        optimizer, scheduler = model.configure_optimizers()
 
         def init_weights(m):
             if hasattr(m, 'weight'):
@@ -99,6 +102,7 @@ class Trainer:
         self.validation_epoch(
             model=model,
             val_dataloader=val_dataloader,
+            scheduler=scheduler,
             epoch_idx=0,
         )
         for epoch_idx in range(1, self.max_epoch + 1):
@@ -111,11 +115,11 @@ class Trainer:
             self.validation_epoch(
                 model=model,
                 val_dataloader=val_dataloader,
+                scheduler=scheduler,
                 epoch_idx=epoch_idx,
             )
-            scheduler.step()
 
-            if epoch_idx % 5 == 0:
+            if epoch_idx % 2 == 0:
                 self.save_checkpoint(
                     model=model,
                     optimizer=optimizer,

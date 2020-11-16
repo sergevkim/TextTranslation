@@ -169,7 +169,7 @@ if __name__ == "__main__":
         encoder_dff_dim=4096,  #TODO
         hidden_dim=1024,
         learning_rate=3e-4,
-        max_epoch=30,
+        max_epoch=10,
         num_workers=4,
         verbose=True,
         version='1.6',

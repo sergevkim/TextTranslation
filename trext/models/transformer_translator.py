@@ -151,7 +151,10 @@ class TransformerTranslator(Module):
     def training_step_end(self):
         pass
 
-    def training_epoch_end(self, epoch_idx):
+    def training_epoch_end(
+            self,
+            epoch_idx: int,
+        ) -> None:
         print(f"Training epoch #{epoch_idx} is over.")
 
     def validation_step(
@@ -182,7 +185,10 @@ class TransformerTranslator(Module):
     def validation_step_end(self):
         pass
 
-    def validation_epoch_end(self, epoch_idx):
+    def validation_epoch_end(
+            self,
+            epoch_idx: int,
+        ) -> None:
         print(f"Validation epoch #{epoch_idx} is over.")
 
     def test_step(
@@ -209,19 +215,16 @@ class TransformerTranslator(Module):
     def test_epoch_end(self):
         pass
 
-    def configure_optimizers(self) -> Optimizer:
-        self.optimizer = Adam(
+    def configure_optimizers(self) -> Tuple[Optimizer, _LRScheduler]:
+        optimizer = Adam(
             params=self.parameters(),
             lr=self.learning_rate,
             betas=(0.9, 0.98),
             eps=1e-9,
         )
 
-        return self.optimizer
-
-    def configure_schedulers(self) -> _LRScheduler:
-        self.scheduler = ReduceLROnPlateau(
-            optimizer=self.optimizer,
+        scheduler = ReduceLROnPlateau(
+            optimizer=optimizer,
             mode='min',
             factor=0.8,
             patience=3,
@@ -229,5 +232,5 @@ class TransformerTranslator(Module):
             verbose=True,
         )
 
-        return self.scheduler
+        return optimizer, scheduler
 

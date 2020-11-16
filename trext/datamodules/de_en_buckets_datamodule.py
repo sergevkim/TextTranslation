@@ -2,7 +2,7 @@ from pathlib import Path
 from typing import List, Tuple
 
 import torch
-from torchtext.data import BucketIterator, Field
+from torchtext.data import BucketIterator, Field, Iterator
 from torchtext.datasets import TranslationDataset
 
 
@@ -20,7 +20,7 @@ class DeEnBucketsDataModule:
         self.batch_size = batch_size
         self.num_workers = num_workers
 
-    def prepare_data(self):
+    def prepare_data(self) -> None:
         self.SRC = Field(
             tokenize=lambda x: x.split(),
             tokenizer_language="de",
@@ -36,7 +36,7 @@ class DeEnBucketsDataModule:
             lower=True,
         )
 
-    def setup(self):
+    def setup(self) -> None:
         self.prepare_data()
         self.train_dataset = TranslationDataset(
             path=str(self.data_path / 'train.de-en.'),
@@ -63,7 +63,7 @@ class DeEnBucketsDataModule:
             min_freq=2,
         )
 
-    def train_dataloader(self):
+    def train_dataloader(self) -> Iterator:
         train_iterator = BucketIterator(
             dataset=self.train_dataset,
             batch_size=self.batch_size,
@@ -72,7 +72,7 @@ class DeEnBucketsDataModule:
 
         return train_iterator
 
-    def val_dataloader(self):
+    def val_dataloader(self) -> Iterator:
         val_iterator = BucketIterator(
             dataset=self.val_dataset,
             batch_size=self.batch_size,
@@ -81,7 +81,7 @@ class DeEnBucketsDataModule:
 
         return val_iterator
 
-    def test_dataloader(self):
+    def test_dataloader(self) -> Iterator:
         test_iterator = BucketIterator(
             dataset=self.test_dataset,
             batch_size=self.batch_size,
@@ -90,3 +90,4 @@ class DeEnBucketsDataModule:
         )
 
         return test_iterator
+
