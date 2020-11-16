@@ -8,7 +8,6 @@ import torch
 
 from trext.datamodules import DeEnBucketsDataModule
 #from trext.loggers import NeptuneLogger
-from trext.models import AttentionTranslator, Encoder, Decoder, Attention
 from trext.models import TransformerTranslator, TransformerEncoder, TransformerDecoder
 from trext.trainer import Trainer
 from trext.utils import Editor, Vocabulary
@@ -16,7 +15,7 @@ from trext.utils import Editor, Vocabulary
 from config import ConfigDataClass
 
 
-def set_seed(seed=9):
+def set_seed(seed: int=9) -> None:
     torch.backends.cudnn.deterministic = True
     torch.manual_seed(seed)
     torch.cuda.manual_seed_all(seed)
@@ -24,14 +23,16 @@ def set_seed(seed=9):
     np.random.seed(seed)
 
 
-def translate_sentence(sentence, src_field, trg_field, model, device, max_len=50):
+#TODO integrate it in TransformerTranslator module
+def translate_sentence(
+        sentence,
+        src_field,
+        trg_field,
+        model,
+        device,
+        max_len=50,
+    ):
     model.eval()
-
-    if isinstance(sentence, str):
-        nlp = spacy.load('de')
-        tokens = [token.text.lower() for token in nlp(sentence)]
-    else:
-        tokens = [token.lower() for token in sentence]
 
     tokens = [src_field.init_token] + tokens + [src_field.eos_token]
     src_indexes = [src_field.vocab.stoi[token] for token in tokens]
@@ -72,9 +73,6 @@ def translate_sentence(sentence, src_field, trg_field, model, device, max_len=50
                 result_tokens.append(tokens[i])
             else:
                 result_tokens.append(tokens[-1])
-
-    #trg_tokens = [trg_field.vocab.itos[tag] for tag in tags]
-    #return trg_tokens[1:], attention
 
     return result_tokens, attention
 
@@ -132,7 +130,6 @@ def main(args):
         )
 
         checkpoint = torch.load(f'models/v{args["version"]}-e{args["max_epoch"]}.hdf5', map_location=args['device'])
-
     else:
         checkpoint = torch.load(f'models/v{args["version"]}-e15.hdf5', map_location=args['device'])
 
