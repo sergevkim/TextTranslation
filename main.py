@@ -160,19 +160,19 @@ if __name__ == "__main__":
         decoder_heads_num=16,  #TODO
         decoder_hidden_dim=1024,  #TODO
         decoder_layers_num=6,  #TODO
-        decoder_dff_dim=409,  #TODO
+        decoder_dff_dim=2048,  #TODO
         device=torch.device('cuda:1' if torch.cuda.is_available() else 'cpu'),
         encoder_dropout_p=0.2,  #TODO
         encoder_heads_num=16,  #TODO
         encoder_hidden_dim=1024,  #TODO
         encoder_layers_num=6,  #TODO
-        encoder_dff_dim=4096,  #TODO
+        encoder_dff_dim=2048,  #TODO
         hidden_dim=1024,
         learning_rate=3e-4,
         max_epoch=10,
         num_workers=4,
         verbose=True,
-        version='1.6',
+        version='1.7',
         inference_only=False,
     )
 

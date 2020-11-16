@@ -226,8 +226,8 @@ class TransformerTranslator(Module):
         scheduler = ReduceLROnPlateau(
             optimizer=optimizer,
             mode='min',
-            factor=0.8,
-            patience=3,
+            factor=0.75,
+            patience=2,
             min_lr=1e-5,
             verbose=True,
         )
