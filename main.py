@@ -34,6 +34,7 @@ def translate_sentence(
     ):
     model.eval()
 
+    tokens = [token.lower() for token in sentence]
     tokens = [src_field.init_token] + tokens + [src_field.eos_token]
     src_indexes = [src_field.vocab.stoi[token] for token in tokens]
     src_tensor = torch.LongTensor(src_indexes).unsqueeze(0).to(device)
@@ -131,7 +132,7 @@ def main(args):
 
         checkpoint = torch.load(f'models/v{args["version"]}-e{args["max_epoch"]}.hdf5', map_location=args['device'])
     else:
-        checkpoint = torch.load(f'models/v{args["version"]}-e15.hdf5', map_location=args['device'])
+        checkpoint = torch.load(f'models/v{args["version"]}-e10.hdf5', map_location=args['device'])
 
     translator.load_state_dict(checkpoint['model_state_dict'])
 
@@ -151,25 +152,25 @@ if __name__ == "__main__":
     parser = ArgumentParser()
     args = parser.parse_args()
     args = dict(
-        batch_size=32,
+        batch_size=128,
         data_path=Path('homework_machine_translation_de-en'),
         decoder_dropout_p=0.2,  #TODO
-        decoder_heads_num=16,  #TODO
-        decoder_hidden_dim=1024,  #TODO
+        decoder_heads_num=8,  #TODO
+        decoder_hidden_dim=128,  #TODO
         decoder_layers_num=6,  #TODO
-        decoder_dff_dim=2048,  #TODO
+        decoder_dff_dim=128,  #TODO
         device=torch.device('cuda:1' if torch.cuda.is_available() else 'cpu'),
         encoder_dropout_p=0.2,  #TODO
-        encoder_heads_num=16,  #TODO
-        encoder_hidden_dim=1024,  #TODO
+        encoder_heads_num=8,  #TODO
+        encoder_hidden_dim=128,  #TODO
         encoder_layers_num=6,  #TODO
-        encoder_dff_dim=2048,  #TODO
-        hidden_dim=1024,
+        encoder_dff_dim=128,  #TODO
+        hidden_dim=128,
         learning_rate=3e-4,
-        max_epoch=10,
+        max_epoch=8,
         num_workers=4,
         verbose=True,
-        version='1.7',
+        version='1.9',
         inference_only=False,
     )
 

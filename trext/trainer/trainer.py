@@ -76,7 +76,7 @@ class Trainer:
             loss_sum += loss.item()
             model.validation_step_end()
 
-        scheduler.step(loss_sum)
+        #scheduler.step(loss_sum)
 
         print(epoch_idx, loss_sum)
         model.validation_epoch_end(epoch_idx=epoch_idx)
