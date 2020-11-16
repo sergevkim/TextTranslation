@@ -119,7 +119,7 @@ class Trainer:
                 epoch_idx=epoch_idx,
             )
 
-            if epoch_idx % 2 == 0:
+            if epoch_idx % 4 == 0:
                 self.save_checkpoint(
                     model=model,
                     optimizer=optimizer,
