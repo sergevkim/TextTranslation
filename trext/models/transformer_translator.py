@@ -219,8 +219,8 @@ class TransformerTranslator(Module):
         optimizer = Adam(
             params=self.parameters(),
             lr=self.learning_rate,
-            betas=(0.9, 0.98),
-            eps=1e-9,
+            #betas=(0.9, 0.98),
+            #eps=1e-9,
         )
 
         scheduler = ReduceLROnPlateau(

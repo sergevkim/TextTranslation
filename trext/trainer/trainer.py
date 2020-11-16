@@ -78,7 +78,7 @@ class Trainer:
 
         #scheduler.step(loss_sum)
 
-        print(epoch_idx, loss_sum)
+        print(epoch_idx, loss_sum / len(val_dataloader))
         model.validation_epoch_end(epoch_idx=epoch_idx)
 
     def fit(
